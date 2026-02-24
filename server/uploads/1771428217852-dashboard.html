@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Student Dashboard</title>
+  <link rel="stylesheet" href="dashboard.css" />
+</head>
+<body>
+
+  <!-- TOP NAVBAR -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <h1>Student Dashboard</h1>
+    </div>
+
+    <div class="topbar-right">
+      <button class="icon-btn" title="Profile">
+        👤 <span class="btn-text">profile</span>
+      </button>
+      <button class="icon-btn logout" title="Logout" aria-label="Logout">
+        ⏻ <span class="btn-text">logout</span>
+      </button>
+    </div>
+  </header>
+  <div class="dashboard-layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <ul class="menu">
+      <li class="menu-item active">📚 <span>Classes</span></li>
+      <li class="menu-item">📝 <span>Assignments</span></li>
+      <li class="menu-item">📤 <span>Submissions</span></li>
+      <li class="menu-item">📊 <span>Reports</span></li>
+      <li class="menu-item">❓ <span>Help</span></li>
+    </ul>
+  </aside>
+
+<main class="content">
+
+  <!-- DEFAULT -->
+  <div id="defaultPage" class="page active">
+    <div class="empty-state">
+      <div class="empty-icon">🏫</div>
+      <h2>No Classes Yet</h2>
+      <p>You haven’t joined any classes yet.<br>Join a class to see it appear here.</p>
+      <button class="btn btn-primary" id="joinClassBtn">Join Class</button>
+    </div>
+  </div>
+
+  <!-- JOIN CLASS PAGE -->
+  <div id="joinClassPage" class="page">
+    <h2 class="page-title">Join a Class</h2>
+    <div class="list-card join-card">
+      <form id="joinForm" class="join-form" onsubmit="return false;">
+        <label for="joinCode">Class Code</label>
+        <input id="joinCode" type="text" placeholder="Enter class code" />
+        <div class="form-actions">
+          <button type="button" class="btn btn-primary" id="joinSubmitBtn">Join</button>
+          <button type="button" class="btn btn-secondary" id="joinCancelBtn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ASSIGNMENTS PAGE -->
+  <div id="assignmentsPage" class="page">
+    <h2 class="page-title">Assignments</h2>
+
+    <div class="assignment-card">
+      <div class="assignment-banner">
+        <h3>Assignment 1: Data Structures</h3>
+      </div>
+
+      <div class="assignment-body">
+        <p><strong>Due:</strong> 10 Jan 2026</p>
+        <p>Implement stack and queue operations.</p>
+
+        <button class="btn-secondary">View Details</button>
+
+        <div class="upload-box">
+          <label class="btn btn-choose" for="assignmentFile">Choose file</label>
+          <input id="assignmentFile" class="file-input" type="file" />
+          <div class="file-name" id="assignmentFileName">No file chosen</div>
+          <button class="btn btn-upload" id="assignmentUploadBtn" disabled>Upload Assignment</button>
+        </div>
+
+        <textarea placeholder="Optional description..."></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUBMISSIONS PAGE -->
+  <div id="submissionsPage" class="page">
+    <h2 class="page-title">Submissions</h2>
+
+    <div class="list-card">
+      <p><strong>Assignment 1</strong> — Submitted on 05 Jan 2026</p>
+      <span class="status success">Submitted</span>
+    </div>
+
+    <div class="list-card">
+      <p><strong>Assignment 2</strong> — Submitted on 07 Jan 2026</p>
+      <span class="status pending">Under Review</span>
+    </div>
+  </div>
+
+  <!-- REPORTS PAGE -->
+  <div id="reportsPage" class="page">
+    <h2 class="page-title">Reports</h2>
+
+    <div class="list-card">
+      <p><strong>Assignment 1</strong></p>
+      <p>Grade: <strong>A</strong></p>
+      <p>Remarks: Excellent work</p>
+    </div>
+
+    <div class="list-card">
+      <p><strong>Assignment 2</strong></p>
+      <p>Grade: <strong>B+</strong></p>
+      <p>Remarks: Improve documentation</p>
+    </div>
+  </div>
+
+</main>
+
+
+</div>
+<!-- ASSIGNMENT DETAILS MODAL -->
+<div id="assignmentModal" class="modal hidden">
+  <div class="modal-content">
+    <h3>Assignment Details</h3>
+
+    <p><strong>Title:</strong> Assignment 1 – Data Structures</p>
+    <p><strong>Due Date:</strong> 10 Jan 2026</p>
+    <p><strong>Description:</strong></p>
+    <p>
+      Implement stack and queue operations using arrays or linked lists.
+      Submit source code and a short explanation document.
+    </p>
+
+    <button class="btn-secondary" id="closeAssignmentModal">Close</button>
+  </div>
+</div>
+<!-- JOIN CLASS MODAL -->
+<div id="joinClassModal" class="modal hidden">
+  <div class="modal-content">
+    <h3>Join a Class</h3>
+
+    <input type="text" id="classCode" placeholder="Enter Class Code" />
+
+    <button class="btn-primary" id="joinClassBtn">Join</button>
+    <button class="btn-secondary" id="closeJoinClassModal">Cancel</button>
+  </div>
+</div>
+
+<script src="dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Dashboard</title>
+    <link rel="stylesheet" href="../css/global.css">
+    <link rel="stylesheet" href="../css/dashboard.css">
+</head>
+<body>
+
+<div class="layout">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>Admin</h2>
+
+        <div class="menu-item" onclick="showSection('createReviewerSection')">
+            👤 Create Reviewer
+        </div>
+
+        <div class="menu-item" onclick="showSection('createEventSection')">
+            📅 Create Event
+        </div>
+
+        <div class="menu-item" onclick="showSection('viewEventsSection')">
+            📋 View Events
+        </div>
+
+        <div class="menu-item" onclick="showSection('viewReviewersSection')">
+            👥 View Reviewers
+        </div>
+
+        <div class="menu-item" onclick="showSection('issuesSection')">
+            ⚠ Issues
+        </div>
+
+        <div class="menu-item logout" onclick="logout()">
+            🚪 Logout
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="content">
+
+        <!-- Create Reviewer -->
+        <div id="createReviewerSection" class="section">
+            <h2>Create Reviewer</h2>
+            <input type="text" id="reviewerName" placeholder="Name">
+            <input type="email" id="reviewerEmail" placeholder="Email">
+            <input type="password" id="reviewerPassword" placeholder="Password">
+            <button onclick="createReviewer()">Create Reviewer</button>
+        </div>
+
+        <!-- Create Event -->
+        <div id="createEventSection" class="section hidden">
+            <h2>Create Event</h2>
+            <input type="text" id="eventTitle" placeholder="Title">
+            <input type="text" id="eventType" placeholder="Type">
+            <textarea id="eventDesc" placeholder="Description"></textarea>
+            <button onclick="createEventHandler()">Create Event</button>
+        </div>
+
+        <!-- View Events -->
+        <div id="viewEventsSection" class="section hidden">
+            <h2>All Events</h2>
+            <div id="eventList"></div>
+        </div>
+
+        <!-- View Reviewers -->
+        <div id="viewReviewersSection" class="section hidden">
+            <h2>All Reviewers</h2>
+            <div id="reviewerList"></div>
+        </div>
+
+        <!-- Issues -->
+        <div id="issuesSection" class="section hidden">
+            <h2>Issues</h2>
+            <p>No issues system implemented yet.</p>
+        </div>
+
+    </div>
+</div>
+
+
+<script src="../js/auth.js"></script>
+<script src="../js/admin.js"></script>
+</body>
+</html>

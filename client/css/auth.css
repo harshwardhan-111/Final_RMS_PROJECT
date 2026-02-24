@@ -1,0 +1,141 @@
+body {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.container {
+  background: white;
+  padding: 45px;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+  animation: slideUp 0.5s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+h2 {
+  text-align: center;
+  margin-bottom: 30px;
+  color: #212529;
+  font-size: 1.8rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+input,
+select {
+  width: 100%;
+  padding: 13px 15px;
+  margin: 12px 0;
+  border-radius: 6px;
+  border: 1.5px solid #dee2e6;
+  font-family: inherit;
+  font-size: 0.95rem;
+  color: #212529;
+  background-color: #fafbfc;
+  transition: all 0.3s ease;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #0f7dff;
+  box-shadow: 0 0 0 3px rgba(15, 125, 255, 0.1);
+  background-color: #f8fbff;
+}
+
+input::placeholder {
+  color: #adb5bd;
+}
+
+select {
+  cursor: pointer;
+  background-image: url('data:image/svg+xml;utf8,<svg fill="%230f7dff" height="24" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M7 10l5 5 5-5z"/></svg>');
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 20px;
+  padding-right: 40px;
+  appearance: none;
+}
+
+button {
+  width: 100%;
+  padding: 13px;
+  margin-top: 20px;
+  background: linear-gradient(135deg, #0f7dff 0%, #0d5dd0 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(15, 125, 255, 0.3);
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(15, 125, 255, 0.4);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+.switch {
+  text-align: center;
+  margin-top: 20px;
+  font-size: 0.95rem;
+  color: #6c757d;
+}
+
+.switch a {
+  color: #0f7dff;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.switch a:hover {
+  color: #0d5dd0;
+  text-decoration: underline;
+}
+
+/* Mobile Responsive */
+@media (max-width: 480px) {
+  .container {
+    padding: 30px 20px;
+  }
+
+  h2 {
+    font-size: 1.5rem;
+    margin-bottom: 25px;
+  }
+
+  input,
+  select,
+  button {
+    padding: 12px;
+    margin: 10px 0;
+    font-size: 0.9rem;
+  }
+
+  button {
+    margin-top: 15px;
+  }
+}

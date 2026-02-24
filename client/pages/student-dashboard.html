@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student Dashboard</title>
+    <link rel="stylesheet" href="../css/global.css">
+<link rel="stylesheet" href="../css/dashboard.css">
+
+</head>
+<body>
+
+<nav class="navbar">
+    <h2>Student Dashboard</h2>
+    <button onclick="logout()">Logout</button>
+</nav>
+
+<div class="container">
+
+    <!-- Join Event Section -->
+    <div class="card">
+        <h3>Join Event</h3>
+        <input type="text" id="eventCode" placeholder="Enter Event Code">
+        <button onclick="joinEvent()">Join</button>
+    </div>
+
+    <!-- Upload Submission -->
+    <div class="card">
+        <h3>Upload Submission</h3>
+        <input type="text" id="uploadEventCode" placeholder="Event Code">
+        <input type="file" id="projectFile">
+        <button onclick="uploadSubmission()">Upload</button>
+    </div>
+
+    <!-- My Submissions -->
+    <h3 style="margin-top:30px;">My Submissions</h3>
+    <div id="submissionList"></div>
+
+</div>
+
+<script src="../js/auth.js"></script>
+<script src="../js/student.js"></script>
+</body>
+</html>

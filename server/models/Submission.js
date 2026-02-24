@@ -1,0 +1,46 @@
+const mongoose = require("mongoose");
+
+const submissionSchema = new mongoose.Schema(
+  {
+    event: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Event",
+      required: true
+    },
+
+    student: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true
+    },
+
+    fileName: {
+      type: String,
+      required: true
+    },
+
+    filePath: {
+      type: String,
+      required: true
+    },
+
+    aiFeedback: {
+      type: String,
+      default: ""
+    },
+
+    reviewerFeedback: {
+      type: String,
+      default: ""
+    },
+
+    status: {
+      type: String,
+      enum: ["pending", "ai-reviewed", "approved", "rejected"],
+      default: "pending"
+    }
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model("Submission", submissionSchema);
