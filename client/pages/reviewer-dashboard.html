@@ -3,7 +3,10 @@
 <head>
   <title>Reviewer Dashboard</title>
   <link rel="stylesheet" href="../css/global.css">
-  <link rel="stylesheet" href="../css/dashboard.css">
+  <!-- reviewer-specific styling (layout, cards, tables, responsive tweaks) -->
+  <link rel="stylesheet" href="../css/reviewer-dashboard.css">
+  <!-- icons for visual cues -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-p4V4+5fEd8d+JQG/jNQeJk+HTGmFj6qwLrK6LyXj1uyxjp/N8p6Yz9QGkZ3lVHghnZl5nqs4mAAcFj9Kas+Kow==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 </head>
 <body>
 
@@ -12,9 +15,35 @@
     <button onclick="logout()">Logout</button>
 </nav>
 
-<div class="container">
-    <h3>Assigned Submissions</h3>
-    <div id="submissionList"></div>
+<!-- dashboard wrapper splits sidebar and main content -->
+<div class="rev-dashboard">
+
+  <!-- sidebar with list of events -->
+  <aside class="rev-sidebar">
+    <h3>Assigned Events</h3>
+    <div id="eventList" class="event-list"></div>
+  </aside>
+
+  <!-- main area for details, submissions, reviews -->
+  <main class="rev-main">
+
+    <section class="event-details-section">
+      <h3>Event Details</h3>
+      <div id="eventDetails" class="event-details"></div>
+    </section>
+
+    <section class="submissions-section">
+      <h3>Student Submissions</h3>
+      <div id="submissionTable" class="submission-table"></div>
+    </section>
+
+    <section class="reviews-section">
+      <h3>Generated Reviews</h3>
+      <div id="reviewSection" class="review-section"></div>
+    </section>
+
+  </main>
+
 </div>
 
 <script src="../js/auth.js"></script>

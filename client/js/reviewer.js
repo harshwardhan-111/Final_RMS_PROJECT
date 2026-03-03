@@ -1,87 +1,107 @@
 const token = localStorage.getItem("token");
 
 if (!token) {
-    window.location.href = "login.html";
+  window.location.href = "login.html";
 }
 
-async function loadSubmissions() {
-    try {
-        const res = await fetch("http://localhost:5000/api/submissions/reviewer", {
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
-        });
+let currentEventId = null;
 
-        const data = await res.json();
+/* =========================================
+   LOAD REVIEWER EVENTS
+========================================= */
+async function loadReviewerEvents() {
+  const res = await fetch("http://localhost:5000/api/events/reviewer", {
+    headers: { Authorization: "Bearer " + token }
+  });
 
-        const container = document.getElementById("submissionList");
-        container.innerHTML = "";
+  const events = await res.json();
+  const container = document.getElementById("eventList");
+  container.innerHTML = "";
 
-        if (data.length === 0) {
-            container.innerHTML = "<p>No submissions assigned.</p>";
-            return;
-        }
-
-        data.forEach(sub => {
-            const card = document.createElement("div");
-            card.className = "card";
-
-           card.innerHTML = `
-    <h4>${sub.event.title}</h4>
-    <p><strong>Student:</strong> ${sub.student.name}</p>
-    <p><strong>Email:</strong> ${sub.student.email}</p>
-    <p><strong>Status:</strong> ${sub.status}</p>
-
-    <a href="http://localhost:5000/uploads/${sub.fileName}" 
-       target="_blank" class="preview-link">
-       View Uploaded File
-    </a>
-
-    <textarea placeholder="Add feedback..." id="feedback-${sub._id}"></textarea>
-
-    <div class="button-group">
-        <button class="approve" onclick="review('${sub._id}','approved')">Approve</button>
-        <button class="reject" onclick="review('${sub._id}','rejected')">Reject</button>
-    </div>
-`;
-
-            container.appendChild(card);
-        });
-
-    } catch (err) {
-        console.error(err);
-    }
+  events.forEach(event => {
+    container.innerHTML += `
+      <div class="card" onclick="selectEvent('${event._id}')">
+        <h4>${event.title}</h4>
+        <p>Status: ${event.status}</p>
+      </div>
+    `;
+  });
 }
 
-async function review(id, decision) {
-    const feedback = document.getElementById(`feedback-${id}`).value;
+/* =========================================
+   SELECT EVENT
+========================================= */
+window.selectEvent = async function (eventId) {
+  currentEventId = eventId;
 
-    try {
-        const res = await fetch("http://localhost:5000/api/submissions/review", {
-            method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                submissionId: id,
-                decision,
-                feedback
-            })
-        });
+  // Load submissions of this event
+  const res = await fetch("http://localhost:5000/api/submissions/reviewer", {
+    headers: { Authorization: "Bearer " + token }
+  });
 
-        const data = await res.json();
-        alert(data.message);
-        loadSubmissions();
+  const submissions = await res.json();
+  const filtered = submissions.filter(s => s.event._id === eventId);
 
-    } catch (err) {
-        console.error(err);
-    }
+  displaySubmissions(filtered);
+};
+
+/* =========================================
+   DISPLAY SUBMISSIONS TABLE
+========================================= */
+function displaySubmissions(submissions) {
+  const table = document.getElementById("submissionTable");
+  table.innerHTML = `
+    <table border="1" width="100%">
+      <tr>
+        <th>Student</th>
+        <th>Email</th>
+        <th>File</th>
+        <th>Status</th>
+        <th>Action</th>
+      </tr>
+      ${submissions.map(sub => `
+        <tr>
+          <td>${sub.student.name}</td>
+          <td>${sub.student.email}</td>
+          <td>${sub.fileName}</td>
+          <td>${sub.status}</td>
+          <td>
+            <button onclick="generateReview('${sub._id}')">Generate Review</button>
+          </td>
+        </tr>
+      `).join("")}
+    </table>
+  `;
 }
 
-function logout() {
-    localStorage.removeItem("token");
-    window.location.href = "login.html";
-}
+/* =========================================
+   GENERATE REVIEW (AI PLACEHOLDER)
+========================================= */
+window.generateReview = async function (submissionId) {
 
-loadSubmissions();
+  // Placeholder AI feedback
+  const aiGeneratedFeedback = "AI generated review will appear here in future.";
+
+  await fetch("http://localhost:5000/api/submissions/review", {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: "Bearer " + token
+    },
+    body: JSON.stringify({
+      submissionId,
+      decision: "approved",
+      feedback: aiGeneratedFeedback
+    })
+  });
+
+  alert("Review generated successfully");
+  selectEvent(currentEventId);
+};
+
+/* =========================================
+   LOAD ON START
+========================================= */
+window.onload = function () {
+  loadReviewerEvents();
+};

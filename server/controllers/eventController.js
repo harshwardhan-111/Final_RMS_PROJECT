@@ -171,7 +171,6 @@ exports.getAllEvents = async (req, res) => {
     });
   }
 };
-//get all reviewers
 /* =========================================
    GET ALL REVIEWERS (ADMIN)
 ========================================= */
@@ -186,5 +185,35 @@ exports.getAllReviewers = async (req, res) => {
     res.status(500).json({
       message: error.message
     });
+  }
+};
+/* =========================================
+   GET STUDENT JOINED EVENTS
+========================================= */
+exports.getStudentEvents = async (req, res) => {
+  try {
+    const events = await Event.find({
+      students: req.user.id
+    }).sort({ createdAt: -1 });
+
+    res.status(200).json(events);
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+/* =========================================
+   GET REVIEWER ASSIGNED EVENTS
+========================================= */
+exports.getReviewerEvents = async (req, res) => {
+  try {
+    const events = await Event.find({
+      reviewers: req.user.id
+    }).sort({ createdAt: -1 });
+
+    res.status(200).json(events);
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 };

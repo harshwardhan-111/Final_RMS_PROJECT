@@ -1,6 +1,6 @@
 const Submission = require("../models/Submission");
 const Event = require("../models/Event");
-
+const generateAIReview = require("../utils/generateAIReview");
 /* =========================================
    STUDENT UPLOAD SUBMISSION
 ========================================= */
@@ -48,7 +48,21 @@ exports.uploadSubmission = async (req, res) => {
   }
 };
 
+/* =========================================
+   GET STUDENT SUBMISSIONS
+========================================= */
+exports.getStudentSubmissions = async (req, res) => {
+  try {
+    const submissions = await Submission.find({
+      student: req.user.id
+    }).populate("event", "title");
 
+    res.status(200).json(submissions);
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 /* =========================================
    GET LOGGED-IN STUDENT SUBMISSIONS
 ========================================= */
@@ -100,13 +114,7 @@ exports.getReviewerSubmissions = async (req, res) => {
 ========================================= */
 exports.reviewSubmission = async (req, res) => {
   try {
-    const { submissionId, decision, feedback } = req.body;
-
-    if (!submissionId || !decision) {
-      return res.status(400).json({
-        message: "Submission ID and decision required"
-      });
-    }
+    const { submissionId } = req.body;
 
     const submission = await Submission.findById(submissionId);
 
@@ -116,19 +124,18 @@ exports.reviewSubmission = async (req, res) => {
       });
     }
 
-    if (!["approved", "rejected"].includes(decision)) {
-      return res.status(400).json({
-        message: "Decision must be approved or rejected"
-      });
-    }
+    // Generate AI review (for now using fileName)
+    const aiFeedback = await generateAIReview(
+      `File name: ${submission.fileName}`
+    );
 
-    submission.status = decision;
-    submission.reviewerFeedback = feedback || "";
+    submission.aiFeedback = aiFeedback;
+    submission.status = "ai-reviewed";
 
     await submission.save();
 
     res.status(200).json({
-      message: "Review completed successfully"
+      message: "AI review generated successfully"
     });
 
   } catch (error) {

@@ -1,0 +1,135 @@
+/* reviewer-dashboard.css
+   Styles specific to the reviewer dashboard spread across
+   layout, sidebar, event cards, tables and responsive tweaks.
+*/
+
+/* layout wrapper */
+.rev-dashboard {
+    max-width: 1200px;
+    margin: 24px auto;
+    padding: 0 16px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+}
+
+/* sidebar containing the event list */
+.rev-sidebar {
+    flex: 1 1 280px;
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.rev-sidebar h3 {
+    color: var(--primary-color);
+    margin-bottom: 16px;
+    font-size: 1.3rem;
+    font-weight: 600;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 8px;
+}
+
+/* event cards inherit global .card styles but we tighten them here */
+.event-list .card {
+    cursor: pointer;
+    margin-bottom: 12px;
+    transition: transform 0.2s ease;
+}
+.event-list .card:hover {
+    transform: translateY(-2px);
+}
+.event-list .card h4 {
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+}
+.event-list .card h4 i {
+    margin-right: 8px;
+    color: var(--primary-color);
+}
+/* if icons not injected by JS, use pseudo-element for calendar */
+.event-list .card h4::before {
+    content: "\f073"; /* FontAwesome calendar */
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    margin-right: 8px;
+    color: var(--primary-color);
+}
+
+/* generic card used within the reviewer dashboard */
+.card {
+    background: white;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border: 1px solid var(--border-color);
+    transition: all 0.3s ease;
+}
+
+/* main content area */
+.rev-main {
+    flex: 3 1 0;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+
+.rev-main section {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
+}
+
+.rev-main section h3 {
+    color: var(--primary-color);
+    margin-bottom: 14px;
+    font-size: 1.25rem;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 6px;
+}
+
+/* table styling inside submissions section */
+.submission-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+.submission-table th,
+.submission-table td {
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    text-align: left;
+}
+.submission-table th {
+    background: var(--light-bg);
+    font-weight: 600;
+}
+.submission-table tr:nth-child(even) {
+    background: #fafafa;
+}
+
+/* details and review sections may contain dynamic markup */
+.event-details,
+.review-section {
+    min-height: 120px;
+}
+
+/* responsive adjustments */
+@media (max-width: 768px) {
+    .rev-dashboard {
+        flex-direction: column;
+        padding: 0 12px;
+    }
+    .rev-sidebar,
+    .rev-main {
+        flex: 1 1 100%;
+        width: 100%;
+    }
+}

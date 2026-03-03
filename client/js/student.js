@@ -1,125 +1,146 @@
 const token = localStorage.getItem("token");
 
 if (!token) {
-    window.location.href = "login.html";
+  window.location.href = "login.html";
 }
 
-/* =============================
+/* =========================================
    JOIN EVENT
-============================= */
-async function joinEvent() {
+========================================= */
+window.joinEvent = async function () {
+  try {
     const eventCode = document.getElementById("eventCode").value.trim();
 
     if (!eventCode) {
-        alert("Enter event code");
-        return;
+      alert("Please enter event code");
+      return;
     }
 
     const res = await fetch("http://localhost:5000/api/events/join", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ eventCode })
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token
+      },
+      body: JSON.stringify({ eventCode })
     });
 
     const data = await res.json();
     alert(data.message);
+
+    loadJoinedEvents();
+
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+/* =========================================
+   LOAD JOINED EVENTS
+========================================= */
+async function loadJoinedEvents() {
+  try {
+    const res = await fetch("http://localhost:5000/api/events/student", {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
+
+    const events = await res.json();
+
+    const container = document.getElementById("submissionList");
+    container.innerHTML = "<h4>Joined Events</h4>";
+
+    events.forEach(event => {
+      container.innerHTML += `
+        <div class="card">
+          <h4>${event.title}</h4>
+          <p>Status: ${event.status}</p>
+        </div>
+      `;
+    });
+
+  } catch (err) {
+    console.error(err);
+  }
 }
 
+/* =========================================
+   LOAD SUBMISSIONS
+========================================= */
+async function loadMySubmissions() {
+  try {
+    const res = await fetch("http://localhost:5000/api/submissions/my", {
+      headers: {
+        Authorization: "Bearer " + token
+      }
+    });
 
-/* =============================
+    const submissions = await res.json();
+
+    const container = document.getElementById("submissionList");
+
+    container.innerHTML += "<h4>My Submissions</h4>";
+
+    submissions.forEach(sub => {
+      container.innerHTML += `
+        <div class="card">
+          <p><strong>Event:</strong> ${sub.event?.title || "Unknown"}</p>
+          <p>Status: ${sub.status}</p>
+          <p>File: ${sub.fileName}</p>
+        </div>
+      `;
+    });
+
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+/* =========================================
    UPLOAD SUBMISSION
-============================= */
-async function uploadSubmission() {
-    const eventCode = document.getElementById("uploadEventCode").value.trim();
-    const file = document.getElementById("projectFile").files[0];
+========================================= */
+window.uploadSubmission = async function () {
+  try {
+    const fileInput = document.getElementById("fileInput");
+    const eventCode = document.getElementById("eventCode").value.trim();
 
-    if (!eventCode || !file) {
-        alert("Event code and file required");
-        return;
+    if (!fileInput.files.length) {
+      alert("Please select a file");
+      return;
+    }
+
+    if (!eventCode) {
+      alert("Please enter event code");
+      return;
     }
 
     const formData = new FormData();
+    formData.append("projectFile", fileInput.files[0]); // MUST match multer
     formData.append("eventCode", eventCode);
-    formData.append("file", file);
 
     const res = await fetch("http://localhost:5000/api/submissions/upload", {
-        method: "POST",
-        headers: {
-            "Authorization": `Bearer ${token}`
-        },
-        body: formData
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + token
+      },
+      body: formData
     });
 
     const data = await res.json();
     alert(data.message);
-    loadSubmissions();
-}
 
+    loadMySubmissions();
 
-/* =============================
-   LOAD MY SUBMISSIONS
-============================= */
-async function loadSubmissions() {
-    const res = await fetch("http://localhost:5000/api/submissions/my", {
-        headers: {
-            "Authorization": `Bearer ${token}`
-        }
-    });
+  } catch (err) {
+    console.error(err);
+  }
+};
 
-    const data = await res.json();
-
-    const container = document.getElementById("submissionList");
-    container.innerHTML = "";
-
-    if (data.length === 0) {
-        container.innerHTML = "<p>No submissions yet.</p>";
-        return;
-    }
-
-    data.forEach(sub => {
-
-        let statusClass = "";
-        if (sub.status === "approved") statusClass = "status-approved";
-        else if (sub.status === "rejected") statusClass = "status-rejected";
-        else statusClass = "status-pending";
-
-        const card = document.createElement("div");
-        card.className = "card";
-
-        card.innerHTML = `
-            <h4>${sub.event.title}</h4>
-            <p><strong>Event Code:</strong> ${sub.event.eventCode}</p>
-
-            <span class="status-badge ${statusClass}">
-                ${sub.status.toUpperCase()}
-            </span>
-
-            <br>
-
-            <a href="http://localhost:5000/uploads/${sub.fileName}" 
-               target="_blank" class="preview-link">
-               View My Submission
-            </a>
-
-            ${sub.reviewerFeedback ? `
-                <div class="feedback-box">
-                    <strong>Reviewer Feedback:</strong>
-                    <p>${sub.reviewerFeedback}</p>
-                </div>
-            ` : ""}
-        `;
-
-        container.appendChild(card);
-    });
-}
-
-
-function logout() {
-    localStorage.removeItem("token");
-    window.location.href = "login.html";
-}
-
-loadSubmissions();
+/* =========================================
+   ON LOAD
+========================================= */
+window.onload = function () {
+  loadJoinedEvents();
+  loadMySubmissions();
+};
