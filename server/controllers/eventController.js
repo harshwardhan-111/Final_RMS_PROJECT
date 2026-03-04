@@ -13,6 +13,18 @@ exports.createEvent = async (req, res) => {
       return res.status(400).json({ message: "All required fields missing" });
     }
 
+    let initialStatus = "upcoming";
+    if (startDate && endDate) {
+      const now = new Date();
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      if (now >= start && now <= end) {
+        initialStatus = "active";
+      } else if (now > end) {
+        initialStatus = "completed";
+      }
+    }
+
     const event = await Event.create({
       title,
       description,
@@ -21,7 +33,7 @@ exports.createEvent = async (req, res) => {
       createdBy: req.user.id,
       startDate,
       endDate,
-      status: "active"
+      status: initialStatus
     });
 
     res.status(201).json({
@@ -155,13 +167,35 @@ exports.updateEventStatus = async (req, res) => {
     });
   }
 };
+const updateStatusesByDate = async (events) => {
+  const now = new Date();
+  for (let event of events) {
+    let newStatus = event.status;
+    if (event.startDate && event.endDate) {
+      const start = new Date(event.startDate);
+      const end = new Date(event.endDate);
+      if (now < start) newStatus = "upcoming";
+      else if (now >= start && now <= end) newStatus = "active";
+      else if (now > end) newStatus = "completed";
+
+      if (newStatus !== event.status) {
+        event.status = newStatus;
+        await event.save();
+      }
+    }
+  }
+  return events;
+};
+
 /* =========================================
    GET ALL EVENTS (ADMIN)
 ========================================= */
 exports.getAllEvents = async (req, res) => {
   try {
-    const events = await Event.find()
-  .populate("reviewers", "name email");
+    let events = await Event.find()
+      .populate("reviewers", "name email");
+
+    events = await updateStatusesByDate(events);
 
     res.status(200).json(events);
 
@@ -176,8 +210,13 @@ exports.getAllEvents = async (req, res) => {
 ========================================= */
 exports.getAllReviewers = async (req, res) => {
   try {
-    const reviewers = await User.find({ role: "reviewer" })
-      .select("-password");
+    const reviewers = await User.find({ role: "reviewer" }).lean();
+
+    for (let reviewer of reviewers) {
+      const events = await Event.find({ reviewers: reviewer._id });
+      reviewer.assignedEvents = events;
+      reviewer.studentCount = events.reduce((acc, ev) => acc + ev.students.length, 0);
+    }
 
     res.status(200).json(reviewers);
 
@@ -187,14 +226,38 @@ exports.getAllReviewers = async (req, res) => {
     });
   }
 };
+
+/* =========================================
+   DELETE REVIEWER (ADMIN)
+========================================= */
+exports.deleteReviewer = async (req, res) => {
+  try {
+    const { reviewerId } = req.params;
+
+    // Remove reviewer from all events
+    await Event.updateMany(
+      { reviewers: reviewerId },
+      { $pull: { reviewers: reviewerId } }
+    );
+
+    // Delete the user
+    await User.findByIdAndDelete(reviewerId);
+
+    res.status(200).json({ message: "Reviewer deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 /* =========================================
    GET STUDENT JOINED EVENTS
 ========================================= */
 exports.getStudentEvents = async (req, res) => {
   try {
-    const events = await Event.find({
+    let events = await Event.find({
       students: req.user.id
     }).sort({ createdAt: -1 });
+
+    events = await updateStatusesByDate(events);
 
     res.status(200).json(events);
 
@@ -207,9 +270,11 @@ exports.getStudentEvents = async (req, res) => {
 ========================================= */
 exports.getReviewerEvents = async (req, res) => {
   try {
-    const events = await Event.find({
+    let events = await Event.find({
       reviewers: req.user.id
     }).sort({ createdAt: -1 });
+
+    events = await updateStatusesByDate(events);
 
     res.status(200).json(events);
 

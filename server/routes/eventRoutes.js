@@ -10,7 +10,8 @@ const {
   assignReviewer,
   updateEventStatus,
   getAllReviewers,
-  getStudentEvents
+  getStudentEvents,
+  deleteReviewer
 } = eventController;
 
 const authMiddleware = require("../middleware/authMiddleware");
@@ -71,6 +72,15 @@ router.get(
   roleMiddleware(["admin"]),
   getAllReviewers
 );
+
+/* ADMIN DELETE REVIEWER */
+router.delete(
+  "/reviewer/:reviewerId",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  deleteReviewer
+);
+
 router.get(
   "/reviewer",
   authMiddleware,

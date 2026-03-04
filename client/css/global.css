@@ -133,3 +133,7 @@ a:hover {
     color: var(--primary-dark);
     text-decoration: underline;
 }
+
+.hidden {
+    display: none !important;
+}

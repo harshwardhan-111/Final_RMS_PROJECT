@@ -54,8 +54,13 @@ async function loadJoinedEvents() {
     events.forEach(event => {
       container.innerHTML += `
         <div class="card">
-          <h4>${event.title}</h4>
+          <h4 style="cursor: pointer; color: #007bff;" onclick="showEventDetails('${event._id}')">${event.title}</h4>
           <p>Status: ${event.status}</p>
+          <div id="details-${event._id}" class="hidden" style="margin-top: 15px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; background: #f9f9f9;">
+              <p><strong>Description:</strong> ${event.description}</p>
+              <p><strong>Start:</strong> ${event.startDate ? new Date(event.startDate).toLocaleString() : 'N/A'}</p>
+              <p><strong>End:</strong> ${event.endDate ? new Date(event.endDate).toLocaleString() : 'N/A'}</p>
+          </div>
         </div>
       `;
     });
@@ -64,6 +69,13 @@ async function loadJoinedEvents() {
     console.error(err);
   }
 }
+
+window.showEventDetails = function (eventId) {
+  const detailsDiv = document.getElementById(`details-${eventId}`);
+  if (detailsDiv) {
+    detailsDiv.classList.toggle('hidden');
+  }
+};
 
 /* =========================================
    LOAD SUBMISSIONS
