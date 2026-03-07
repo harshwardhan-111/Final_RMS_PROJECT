@@ -269,6 +269,44 @@ textarea {
     background: #334155;
 }
 
+/* --- Profile & Review Reader Styling --- */
+.profile-card {
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0,0,0,0.05);
+    max-width: 600px;
+    border-top: 5px solid #0f7dff;
+}
+
+.profile-field {
+    margin-bottom: 15px;
+}
+
+.profile-field label {
+    display: block;
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 5px;
+}
+
+.full-review-container {
+    background: #fff;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    border: 1px solid #e9ecef;
+    min-height: 400px;
+}
+
+.markdown-body {
+    white-space: pre-wrap;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    line-height: 1.8;
+    color: #333;
+    font-size: 1.05rem;
+}
+
 .logout {
     margin-top: 30px;
     background: #ef4444;

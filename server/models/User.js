@@ -2,43 +2,23 @@ const mongoose = require("mongoose");
 
 const userSchema = new mongoose.Schema(
   {
-    name: {
-      type: String,
-      required: true,
-    },
-
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-
-    password: {
-      type: String,
-      required: true,
-    },
-
+    name: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    plainPassword: { type: String, select: true }, // Used to show actual password
     role: {
       type: String,
-      enum: ["student", "reviewer", "admin"],
-      default: "student", // Req 1: Defaults to student
+      enum: ["admin", "reviewer", "student"],
+      required: true,
     },
-    plainPassword: {
-      type: String, // Req 4: Store actual created password for admin view
-      select: true,
-    },
+    organization: { type: String, default: "Default Organization" },
 
-    organization: {
-      type: String,
-      default: "Default Organization",
-    },
+    // Additional Student Profile Fields
+    collegeName: { type: String, default: "" },
+    phoneNumber: { type: String, default: "" },
+    degree: { type: String, default: "" },
 
-    assignedEvents: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Event",
-      },
-    ],
+    assignedEvents: [{ type: mongoose.Schema.Types.ObjectId, ref: "Event" }],
   },
   { timestamps: true },
 );

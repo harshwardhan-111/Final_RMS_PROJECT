@@ -4,17 +4,47 @@ if (!token) {
   window.location.href = "login.html";
 }
 
+// Global section toggle
 function showSection(sectionId) {
-    document.getElementById('myEventsSection').classList.add('hidden');
-    document.getElementById('eventWorkspaceSection').classList.add('hidden');
-    document.getElementById('joinEventSection').classList.add('hidden');
-    
-    if (sectionId === 'myEventsSection') {
-        document.getElementById('joinEventSection').classList.remove('hidden');
-    }
-    
-    document.getElementById(sectionId).classList.remove('hidden');
+    const sections = document.querySelectorAll(".section");
+    sections.forEach(sec => sec.classList.add("hidden"));
+    document.getElementById(sectionId).classList.remove("hidden");
+
+    if(sectionId === 'myEventsSection') loadMyEvents();
+    if(sectionId === 'submissionsSection') loadMySubmissions();
+    if(sectionId === 'profileSection') loadProfile();
 }
+
+/* =========================================
+   PROFILE FUNCTIONS
+========================================= */
+async function loadProfile() {
+    const res = await fetch("http://localhost:5000/api/auth/me", {
+        headers: { "Authorization": `Bearer ${token}` }
+    });
+    const user = await res.json();
+    document.getElementById("profName").value = user.name;
+    document.getElementById("profEmail").value = user.email;
+    document.getElementById("profCollege").value = user.collegeName || "";
+    document.getElementById("profDegree").value = user.degree || "";
+    document.getElementById("profPhone").value = user.phoneNumber || "";
+}
+
+window.updateProfile = async function() {
+    const name = document.getElementById("profName").value;
+    const collegeName = document.getElementById("profCollege").value;
+    const degree = document.getElementById("profDegree").value;
+    const phoneNumber = document.getElementById("profPhone").value;
+
+    const res = await fetch("http://localhost:5000/api/auth/profile", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
+        body: JSON.stringify({ name, collegeName, degree, phoneNumber })
+    });
+    const data = await res.json();
+    alert(data.message);
+}
+
 
 /* =========================================
    JOIN EVENT

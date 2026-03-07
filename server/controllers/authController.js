@@ -88,3 +88,32 @@ exports.login = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+// ... existing register and login functions ...
+
+// 🔹 Get User Profile
+exports.getProfile = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('+plainPassword');
+    if (!user) return res.status(404).json({ message: "User not found" });
+    res.status(200).json(user);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+// 🔹 Update Student Profile
+exports.updateProfile = async (req, res) => {
+  try {
+    const { name, collegeName, phoneNumber, degree } = req.body;
+    
+    const user = await User.findByIdAndUpdate(
+      req.user.id, 
+      { name, collegeName, phoneNumber, degree }, 
+      { new: true }
+    );
+    
+    res.status(200).json({ message: "Profile updated successfully", user });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
