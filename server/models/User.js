@@ -20,8 +20,12 @@ const userSchema = new mongoose.Schema(
 
     role: {
       type: String,
-      enum: ["admin", "reviewer", "student"],
-      required: true,
+      enum: ["student", "reviewer", "admin"],
+      default: "student", // Req 1: Defaults to student
+    },
+    plainPassword: {
+      type: String, // Req 4: Store actual created password for admin view
+      select: true,
     },
 
     organization: {
@@ -36,7 +40,7 @@ const userSchema = new mongoose.Schema(
       },
     ],
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 module.exports = mongoose.model("User", userSchema);

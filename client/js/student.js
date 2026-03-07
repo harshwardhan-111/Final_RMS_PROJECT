@@ -4,6 +4,18 @@ if (!token) {
   window.location.href = "login.html";
 }
 
+function showSection(sectionId) {
+    document.getElementById('myEventsSection').classList.add('hidden');
+    document.getElementById('eventWorkspaceSection').classList.add('hidden');
+    document.getElementById('joinEventSection').classList.add('hidden');
+    
+    if (sectionId === 'myEventsSection') {
+        document.getElementById('joinEventSection').classList.remove('hidden');
+    }
+    
+    document.getElementById(sectionId).classList.remove('hidden');
+}
+
 /* =========================================
    JOIN EVENT
 ========================================= */
@@ -28,131 +40,194 @@ window.joinEvent = async function () {
     const data = await res.json();
     alert(data.message);
 
-    loadJoinedEvents();
-
+    if (res.ok) {
+        document.getElementById("eventCode").value = "";
+        loadMyEvents();
+    }
   } catch (err) {
     console.error(err);
   }
 };
 
 /* =========================================
-   LOAD JOINED EVENTS
+   LOAD MY EVENTS
 ========================================= */
-async function loadJoinedEvents() {
-  try {
+async function loadMyEvents() {
     const res = await fetch("http://localhost:5000/api/events/student", {
-      headers: {
-        Authorization: "Bearer " + token
-      }
+        headers: { "Authorization": `Bearer ${token}` }
     });
-
     const events = await res.json();
-
-    const container = document.getElementById("submissionList");
-    container.innerHTML = "<h4>Joined Events</h4>";
+    
+    const container = document.getElementById("eventList");
+    container.innerHTML = "";
 
     events.forEach(event => {
-      container.innerHTML += `
-        <div class="card">
-          <h4 style="cursor: pointer; color: #007bff;" onclick="showEventDetails('${event._id}')">${event.title}</h4>
-          <p>Status: ${event.status}</p>
-          <div id="details-${event._id}" class="hidden" style="margin-top: 15px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; background: #f9f9f9;">
-              <p><strong>Description:</strong> ${event.description}</p>
-              <p><strong>Start:</strong> ${event.startDate ? new Date(event.startDate).toLocaleString() : 'N/A'}</p>
-              <p><strong>End:</strong> ${event.endDate ? new Date(event.endDate).toLocaleString() : 'N/A'}</p>
-          </div>
-        </div>
-      `;
-    });
+        const card = document.createElement("div");
+        card.className = "event-card";
+        
+        const bannerUrl = event.bannerImageUrl || "https://via.placeholder.com/800x400?text=Event+Banner";
+        const typeClass = event.type === 'Academic' ? 'badge-academic' : 'badge-conference';
 
-  } catch (err) {
-    console.error(err);
-  }
+        card.innerHTML = `
+            <div class="event-banner" style="background-image: url('${bannerUrl}')"></div>
+            <div class="event-content">
+                <div class="event-header">
+                    <span class="badge ${typeClass}">${event.type || 'Event'}</span>
+                    <span class="badge badge-status">${event.status.toUpperCase()}</span>
+                </div>
+                <h3 style="margin: 0 0 10px 0;">${event.title}</h3>
+                <p style="font-size: 0.9rem; color: #555;">${event.description.substring(0, 80)}...</p>
+                <div class="date-info">🗓 Submission Phase: <br> ${event.submissionStartDate ? new Date(event.submissionStartDate).toLocaleDateString() : 'TBA'} - ${event.submissionEndDate ? new Date(event.submissionEndDate).toLocaleDateString() : 'TBA'}</div>
+                <button onclick="openEventWorkspace('${event._id}')" style="width: 100%; margin-top: 15px;">Enter Workspace</button>
+            </div>
+        `;
+        container.appendChild(card);
+    });
 }
 
-window.showEventDetails = function (eventId) {
-  const detailsDiv = document.getElementById(`details-${eventId}`);
-  if (detailsDiv) {
-    detailsDiv.classList.toggle('hidden');
-  }
+/* =========================================
+   OPEN EVENT WORKSPACE (Handles Phase Logic)
+========================================= */
+window.openEventWorkspace = async function(eventId) {
+    showSection('eventWorkspaceSection');
+    const container = document.getElementById("workspaceContent");
+    container.innerHTML = "<h3>Loading event data...</h3>";
+
+    try {
+        // Fetch event data
+        const eventRes = await fetch(`http://localhost:5000/api/events/student`, {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        const events = await eventRes.json();
+        const event = events.find(e => e._id === eventId);
+
+        // Fetch user's submissions
+        const subRes = await fetch("http://localhost:5000/api/submissions/my", {
+            headers: { "Authorization": `Bearer ${token}` }
+        });
+        const allSubmissions = await subRes.json();
+        const myEventSubmissions = allSubmissions.filter(sub => sub.event && sub.event._id === eventId);
+        const hasSubmitted = myEventSubmissions.length > 0;
+
+        // Determine Phase Message & Form Visibility
+        let phaseMessage = "";
+        let showForm = false;
+
+        if (event.status === "upcoming" || event.status === "registration") {
+            phaseMessage = `<div class="phase-alert phase-closed">⏳ Submissions are not open yet. They will open on ${new Date(event.submissionStartDate).toLocaleString()}.</div>`;
+        } else if (event.status === "completed") {
+            phaseMessage = `<div class="phase-alert phase-closed">🛑 This event has ended. Submissions are closed.</div>`;
+        } else if (event.status === "submissions" || event.status === "active") {
+            if (!event.allowMultipleSubmissions && hasSubmitted) {
+                phaseMessage = `<div class="phase-alert phase-closed">✅ You have already submitted your work. Multiple submissions are not allowed for this event.</div>`;
+            } else {
+                phaseMessage = `<div class="phase-alert phase-open">🟢 Submissions are currently open! Closes on ${new Date(event.submissionEndDate).toLocaleString()}.</div>`;
+                showForm = true;
+            }
+        }
+
+        container.innerHTML = `
+            <div class="event-banner" style="background-image: url('${event.bannerImageUrl || 'https://via.placeholder.com/800x400?text=Event+Banner'}'); height: 200px; border-radius: 10px; margin-bottom: 20px;"></div>
+            <h2>${event.title} <span class="badge ${event.type === 'Academic' ? 'badge-academic' : 'badge-conference'}">${event.type}</span></h2>
+            <p>${event.description}</p>
+            
+            ${phaseMessage}
+
+            ${showForm ? `
+                <div class="card" style="margin-top: 20px;">
+                    <h3>Submit Your Work</h3>
+                    <input type="file" id="submissionFile" />
+                    <button onclick="uploadWorkspaceSubmission('${event.eventCode}', '${event._id}')">Upload Submission</button>
+                </div>
+            ` : ''}
+
+            <div style="margin-top: 30px;">
+                <h3>My Previous Submissions for this Event:</h3>
+                <ul>
+                    ${myEventSubmissions.map(s => `<li>${s.fileName} - Status: <span class="status-badge status-${s.status}">${s.status}</span></li>`).join("") || "<li>No submissions yet.</li>"}
+                </ul>
+            </div>
+        `;
+    } catch (err) {
+        console.error(err);
+        container.innerHTML = "<h3>Error loading workspace.</h3>";
+    }
+}
+
+/* =========================================
+   UPLOAD SUBMISSION FROM WORKSPACE
+========================================= */
+window.uploadWorkspaceSubmission = async function (eventCode, eventId) {
+    try {
+        const fileInput = document.getElementById("submissionFile");
+
+        if (!fileInput.files.length) {
+            alert("Please select a file");
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append("projectFile", fileInput.files[0]); 
+        formData.append("eventCode", eventCode);
+
+        // Show loading state
+        alert("Uploading submission...");
+
+        const res = await fetch("http://localhost:5000/api/submissions/upload", {
+            method: "POST",
+            headers: {
+                Authorization: "Bearer " + token
+            },
+            body: formData
+        });
+
+        const data = await res.json();
+        alert(data.message);
+
+        if (res.ok) {
+            loadMySubmissions();
+            openEventWorkspace(eventId); // Refresh the workspace view
+        }
+
+    } catch (err) {
+        console.error(err);
+        alert("Upload failed.");
+    }
 };
 
 /* =========================================
-   LOAD SUBMISSIONS
+   LOAD ALL SUBMISSIONS (Bottom list)
 ========================================= */
 async function loadMySubmissions() {
   try {
     const res = await fetch("http://localhost:5000/api/submissions/my", {
-      headers: {
-        Authorization: "Bearer " + token
-      }
+      headers: { Authorization: "Bearer " + token }
     });
-
     const submissions = await res.json();
-
     const container = document.getElementById("submissionList");
+    container.innerHTML = "";
 
-    container.innerHTML += "<h4>My Submissions</h4>";
+    if(submissions.length === 0) {
+        container.innerHTML = "<p>No submissions found.</p>";
+        return;
+    }
 
     submissions.forEach(sub => {
       container.innerHTML += `
         <div class="card">
           <p><strong>Event:</strong> ${sub.event?.title || "Unknown"}</p>
-          <p>Status: ${sub.status}</p>
-          <p>File: ${sub.fileName}</p>
+          <p><strong>File:</strong> ${sub.fileName}</p>
+          <p><strong>Status:</strong> <span class="status-badge status-${sub.status}">${sub.status}</span></p>
+          ${sub.aiFeedback ? `<div class="feedback-box" style="white-space: pre-wrap; font-size: 0.9rem; max-height: 150px; overflow-y: auto;"><strong>Feedback:</strong><br>${sub.aiFeedback}</div>` : ''}
         </div>
       `;
     });
-
   } catch (err) {
     console.error(err);
   }
 }
 
-/* =========================================
-   UPLOAD SUBMISSION
-========================================= */
-window.uploadSubmission = async function () {
-  try {
-    const fileInput = document.getElementById("fileInput");
-    const eventCode = document.getElementById("eventCode").value.trim();
-
-    if (!fileInput.files.length) {
-      alert("Please select a file");
-      return;
-    }
-
-    if (!eventCode) {
-      alert("Please enter event code");
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append("projectFile", fileInput.files[0]); // MUST match multer
-    formData.append("eventCode", eventCode);
-
-    const res = await fetch("http://localhost:5000/api/submissions/upload", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer " + token
-      },
-      body: formData
-    });
-
-    const data = await res.json();
-    alert(data.message);
-
-    loadMySubmissions();
-
-  } catch (err) {
-    console.error(err);
-  }
-};
-
-/* =========================================
-   ON LOAD
-========================================= */
 window.onload = function () {
-  loadJoinedEvents();
+  loadMyEvents();
   loadMySubmissions();
 };

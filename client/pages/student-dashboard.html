@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <title>Student Dashboard</title>
     <link rel="stylesheet" href="../css/global.css">
-<link rel="stylesheet" href="../css/dashboard.css">
-
+    <link rel="stylesheet" href="../css/dashboard.css">
 </head>
 <body>
 
@@ -15,23 +15,24 @@
 
 <div class="container">
 
-    <!-- Join Event Section -->
-    <div class="card">
+    <div class="card" id="joinEventSection">
         <h3>Join Event</h3>
-        <input type="text" id="eventCode" placeholder="Enter Event Code">
-        <button onclick="joinEvent()">Join</button>
+        <input type="text" id="eventCode" placeholder="Enter Event Code (e.g. ABCD1234)">
+        <button onclick="joinEvent()">Join Event</button>
     </div>
 
-    <!-- Upload Submission -->
-    <div class="card">
-        <h3>Upload Submission</h3>
-        <input type="text" id="uploadEventCode" placeholder="Event Code">
-        <input type="file" id="fileInput">
-        <button onclick="uploadSubmission()">Upload</button>
+    <div id="myEventsSection" class="section">
+        <h3 style="margin-top: 20px;">My Joined Events</h3>
+        <div id="eventList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;"></div>
     </div>
 
-    <!-- My Submissions -->
-    <h3 style="margin-top:30px;">My Submissions</h3>
+    <div id="eventWorkspaceSection" class="section hidden">
+        <button onclick="showSection('myEventsSection')" style="background:#6c757d; margin-bottom: 20px;">← Back to Events</button>
+        <div id="workspaceContent">
+            </div>
+    </div>
+
+    <h3 style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee;">All My Submissions</h3>
     <div id="submissionList"></div>
 
 </div>

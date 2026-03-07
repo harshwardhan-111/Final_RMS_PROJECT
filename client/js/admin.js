@@ -1,5 +1,5 @@
 const token = localStorage.getItem("token");
-
+let allReviewersData = []; // Store for searching
 if (!token) {
     window.location.href = "login.html";
 }
@@ -37,27 +37,32 @@ async function createEventHandler() {
     const title = document.getElementById("eventTitle").value;
     const type = document.getElementById("eventType").value;
     const description = document.getElementById("eventDesc").value;
+    const bannerImageUrl = document.getElementById("eventBannerUrl").value;
+    const allowMultipleSubmissions = document.getElementById("allowMultiple").checked;
+    
     const startDate = document.getElementById("eventStartDate").value;
     const endDate = document.getElementById("eventEndDate").value;
+    const registrationStartDate = document.getElementById("regStart").value;
+    const registrationEndDate = document.getElementById("regEnd").value;
+    const submissionStartDate = document.getElementById("subStart").value;
+    const submissionEndDate = document.getElementById("subEnd").value;
 
     const res = await fetch("http://localhost:5000/api/events/create", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${token}`
-        },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${token}` },
         body: JSON.stringify({
-            title,
-            type,
-            description,
-            startDate,
-            endDate
+            title, type, description, bannerImageUrl, allowMultipleSubmissions,
+            startDate, endDate,
+            registrationStartDate, registrationEndDate, submissionStartDate, submissionEndDate
         })
     });
 
     const data = await res.json();
     alert(data.message);
-    loadEvents();
+    if(res.ok) {
+        document.getElementById("createEventSection").querySelectorAll('input:not([type="checkbox"]), textarea').forEach(el => el.value = '');
+        showSection('viewEventsSection');
+    }
 }
 
 /* =====================
@@ -88,7 +93,7 @@ async function loadEvents() {
     ${event.reviewers.length > 0
                 ? event.reviewers.map(r => r.name).join(", ")
                 : "None"}
-</p>
+    </p>
     <select id="reviewer-${event._id}">
         <option value="">Select Reviewer</option>
     </select>
@@ -106,6 +111,11 @@ async function loadEvents() {
     <button onclick="updateStatus('${event._id}','completed')">
         Set Completed
     </button>
+
+    <button onclick="deleteEvent('${event._id}')" style="background-color: #dc3545; color: white; margin-left: 10px;">
+        Delete Event
+    </button>
+
     <div id="details-${event._id}" class="hidden" style="margin-top: 15px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; background: #f9f9f9;">
         <p><strong>Description:</strong> ${event.description}</p>
         <p><strong>Start:</strong> ${event.startDate ? new Date(event.startDate).toLocaleString() : 'N/A'}</p>
@@ -216,45 +226,54 @@ function showSection(sectionId) {
         loadReviewers();
     }
 }
+/* =====================
+   LOAD & SEARCH REVIEWERS
+===================== */
 async function loadReviewers() {
+    const res = await fetch("http://localhost:5000/api/events/reviewers", {
+        headers: { "Authorization": `Bearer ${token}` }
+    });
+    allReviewersData = await res.json();
+    renderReviewers(allReviewersData);
+}
 
-    const res = await fetch(
-        "http://localhost:5000/api/events/reviewers",
-        {
-            headers: {
-                "Authorization": `Bearer ${token}`
-            }
-        }
-    );
-
-    const reviewers = await res.json();
-
+function renderReviewers(reviewers) {
     const container = document.getElementById("reviewerList");
     container.innerHTML = "";
 
     reviewers.forEach(r => {
-
         const card = document.createElement("div");
         card.className = "card";
-
+        
         const assignedEventsHtml = r.assignedEvents && r.assignedEvents.length > 0
-            ? r.assignedEvents.map(e => e.title).join(", ")
-            : "None";
+            ? r.assignedEvents.map(e => `<span class="badge">${e.title}</span>`).join(" ")
+            : "<em>No events assigned</em>";
 
         card.innerHTML = `
-            <h4 style="cursor: pointer; color: #007bff;" onclick="showReviewerDetails('${r._id}')">${r.name}</h4>
-            <p>${r.email}</p>
-            <div id="reviewer-details-${r._id}" class="hidden" style="margin-top: 15px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; background: #f9f9f9;">
-                <p><strong>Email:</strong> ${r.email}</p>
-                <p><strong>Password:</strong> ${r.password || 'Hidden/Hashed'}</p>
-                <p><strong>Assigned Events:</strong> ${assignedEventsHtml}</p>
-                <p><strong>Total Students:</strong> ${r.studentCount || 0}</p>
-                <button onclick="deleteReviewer('${r._id}')" style="background-color: #dc3545; color: white; margin-top: 10px;">Delete Reviewer</button>
+            <h4 style="cursor: pointer; color: #007bff; display:flex; justify-content:space-between;" onclick="showReviewerDetails('${r._id}')">
+                <span>👤 ${r.name}</span>
+                <small>▼</small>
+            </h4>
+            <p>📧 ${r.email}</p>
+            <div id="reviewer-details-${r._id}" class="hidden details-panel">
+                <p><strong>Actual Password:</strong> <span style="font-family:monospace; background:#eee; padding:2px 5px;">${r.plainPassword || 'Not stored'}</span></p>
+                <p><strong>Assigned Events:</strong><br> ${assignedEventsHtml}</p>
+                <p><strong>Total Students Under Care:</strong> <span style="font-size:1.2em; font-weight:bold; color:green;">${r.studentCount || 0}</span></p>
+                <button onclick="deleteReviewer('${r._id}')" class="btn-danger">Delete Reviewer</button>
             </div>
         `;
-
         container.appendChild(card);
     });
+}
+
+function filterReviewers() {
+    const query = document.getElementById("searchReviewerInput").value.toLowerCase();
+    const filtered = allReviewersData.filter(r => {
+        const matchName = r.name.toLowerCase().includes(query);
+        const matchEvent = r.assignedEvents.some(e => e.title.toLowerCase().includes(query));
+        return matchName || matchEvent;
+    });
+    renderReviewers(filtered);
 }
 
 function showReviewerDetails(id) {
@@ -278,5 +297,31 @@ async function deleteReviewer(id) {
     alert(data.message || "Reviewer deleted");
     loadReviewers();
 }
+/* =====================
+   DELETE EVENT
+===================== */
+async function deleteEvent(eventId) {
+    if (!confirm("Are you sure you want to delete this event? This action cannot be undone.")) return;
 
+    try {
+        const res = await fetch(`http://localhost:5000/api/events/${eventId}`, {
+            method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
+
+        const data = await res.json();
+        
+        if (res.ok) {
+            alert("Event deleted successfully");
+            loadEvents(); // Refresh the events list
+        } else {
+            alert("Error: " + data.message);
+        }
+    } catch (err) {
+        console.error("Failed to delete event:", err);
+        alert("Failed to delete event.");
+    }
+}
 loadEvents();

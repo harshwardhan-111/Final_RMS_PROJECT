@@ -1,6 +1,9 @@
+const fs = require("fs");
+const path = require("path");
 const Submission = require("../models/Submission");
 const Event = require("../models/Event");
 const generateAIReview = require("../utils/generateAIReview");
+
 /* =========================================
    STUDENT UPLOAD SUBMISSION
 ========================================= */
@@ -16,18 +19,25 @@ exports.uploadSubmission = async (req, res) => {
       return res.status(400).json({ message: "Event code required" });
     }
 
-    // Find event using eventCode
     const event = await Event.findOne({ eventCode });
 
     if (!event) {
       return res.status(404).json({ message: "Event not found" });
     }
 
-    // Check if student joined event
     if (!event.students.includes(req.user.id)) {
-      return res.status(403).json({
-        message: "You have not joined this event"
-      });
+      return res.status(403).json({ message: "You have not joined this event" });
+    }
+
+    if (event.status !== "submissions" && event.status !== "active") {
+      return res.status(400).json({ message: `Submissions are closed. Status: ${event.status}` });
+    }
+
+    if (!event.allowMultipleSubmissions) {
+      const existingSubmission = await Submission.findOne({ event: event._id, student: req.user.id });
+      if (existingSubmission) {
+        return res.status(400).json({ message: "Multiple submissions are not allowed." });
+      }
     }
 
     const submission = await Submission.create({
@@ -38,76 +48,39 @@ exports.uploadSubmission = async (req, res) => {
       status: "pending"
     });
 
-    res.status(201).json({
-      message: "Submission uploaded successfully",
-      submission
-    });
-
+    res.status(201).json({ message: "Submission uploaded successfully", submission });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
 /* =========================================
-   GET STUDENT SUBMISSIONS
+   GET SUBMISSIONS
 ========================================= */
 exports.getStudentSubmissions = async (req, res) => {
   try {
-    const submissions = await Submission.find({
-      student: req.user.id
-    }).populate("event", "title");
-
+    const submissions = await Submission.find({ student: req.user.id }).populate("event", "title");
     res.status(200).json(submissions);
-
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+  } catch (error) { res.status(500).json({ message: error.message }); }
 };
-/* =========================================
-   GET LOGGED-IN STUDENT SUBMISSIONS
-========================================= */
+
 exports.getMySubmissions = async (req, res) => {
   try {
-    const submissions = await Submission.find({
-      student: req.user.id
-    })
-      .populate("event", "title eventCode")
-      .sort({ createdAt: -1 });
-
+    const submissions = await Submission.find({ student: req.user.id })
+      .populate("event", "title eventCode").sort({ createdAt: -1 });
     res.status(200).json(submissions);
-
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+  } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
-
-/* =========================================
-   GET REVIEWER SUBMISSIONS
-========================================= */
 exports.getReviewerSubmissions = async (req, res) => {
   try {
-    // Find events assigned to this reviewer
-    const events = await Event.find({
-      reviewers: req.user.id
-    });
-
+    const events = await Event.find({ reviewers: req.user.id });
     const eventIds = events.map(event => event._id);
-
-    const submissions = await Submission.find({
-      event: { $in: eventIds }
-    })
-      .populate("student", "name email")
-      .populate("event", "title eventCode")
-      .sort({ createdAt: -1 });
-
+    const submissions = await Submission.find({ event: { $in: eventIds } })
+      .populate("student", "name email").populate("event", "title eventCode").sort({ createdAt: -1 });
     res.status(200).json(submissions);
-
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+  } catch (error) { res.status(500).json({ message: error.message }); }
 };
-
 
 /* =========================================
    REVIEWER APPROVE / REJECT SUBMISSION
@@ -115,30 +88,62 @@ exports.getReviewerSubmissions = async (req, res) => {
 exports.reviewSubmission = async (req, res) => {
   try {
     const { submissionId } = req.body;
-
     const submission = await Submission.findById(submissionId);
 
     if (!submission) {
-      return res.status(404).json({
-        message: "Submission not found"
-      });
+      return res.status(404).json({ message: "Submission not found" });
     }
 
-    // Generate AI review (for now using fileName)
-    const aiFeedback = await generateAIReview(
-      `File name: ${submission.fileName}`
-    );
+    const filePath = path.join(__dirname, "..", submission.filePath);
+    let extractedText = "";
+    let fileInlineData = null;
+
+    if (fs.existsSync(filePath)) {
+      const ext = path.extname(submission.fileName).toLowerCase();
+      
+      // 🚀 Send PDFs and Images DIRECTLY to Gemini!
+      if (ext === '.pdf') {
+          const fileBuffer = fs.readFileSync(filePath);
+          fileInlineData = {
+              inlineData: {
+                  data: fileBuffer.toString("base64"),
+                  mimeType: "application/pdf"
+              }
+          };
+      } else if (['.png', '.jpg', '.jpeg', '.webp'].includes(ext)) {
+          const fileBuffer = fs.readFileSync(filePath);
+          const mimeType = ext === '.png' ? 'image/png' : (ext === '.webp' ? 'image/webp' : 'image/jpeg');
+          fileInlineData = {
+              inlineData: {
+                  data: fileBuffer.toString("base64"),
+                  mimeType: mimeType
+              }
+          };
+      } else if (['.txt', '.md', '.html', '.js', '.css', '.csv'].includes(ext)) {
+          extractedText = fs.readFileSync(filePath, 'utf8');
+      } else {
+          extractedText = `[System Note: File format (${ext}) not supported. File Name: ${submission.fileName}]`;
+      }
+    } else {
+      extractedText = `[System Note: File not found on server. File Name: ${submission.fileName}]`;
+    }
+
+    const textToReview = extractedText.substring(0, 25000);
+    
+    // Pass both the text (if any) and the actual File Data to Gemini
+    const aiFeedback = await generateAIReview(textToReview, fileInlineData);
 
     submission.aiFeedback = aiFeedback;
     submission.status = "ai-reviewed";
-
     await submission.save();
 
     res.status(200).json({
-      message: "AI review generated successfully"
+      message: "AI review generated successfully",
+      feedback: aiFeedback
     });
 
   } catch (error) {
+    console.error("Review Error:", error);
     res.status(500).json({ message: error.message });
   }
 };

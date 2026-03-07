@@ -2,7 +2,6 @@ const User = require("../models/User");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 
-
 // 🔹 Generate JWT
 const generateToken = (id, role) => {
   return jwt.sign({ id, role }, process.env.JWT_SECRET, {
@@ -10,17 +9,21 @@ const generateToken = (id, role) => {
   });
 };
 
-
-// 🔹 Register
+// 🔹 Register (Handles both Student public registration and Admin creating a Reviewer)
 exports.register = async (req, res) => {
   try {
+    // Note: Public registration form should send role: "student"
+    // Admin dashboard sends role: "reviewer"
     const { name, email, password, role } = req.body;
 
-    if (!name || !email || !password || !role) {
+    if (!name || !email || !password) {
       return res.status(400).json({ message: "All fields required" });
     }
 
-    if (!["student", "reviewer"].includes(role)) {
+    // Default to student if no role is provided (Req 1: Registration module only student can register)
+    const assignedRole = role || "student";
+
+    if (!["student", "reviewer"].includes(assignedRole)) {
       return res.status(400).json({ message: "Invalid role" });
     }
 
@@ -30,17 +33,26 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: "User already exists" });
     }
 
+    // Encrypt the password for the standard login flow
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await User.create({
+    // Create the user object
+    const userData = {
       name,
       email,
       password: hashedPassword,
-      role,
-    });
+      role: assignedRole,
+    };
+
+    // If Admin is creating a reviewer, save the plain password so Admin can view it later
+    if (assignedRole === "reviewer") {
+      userData.plainPassword = password;
+    }
+
+    const user = await User.create(userData);
 
     res.status(201).json({
-      message: "User registered successfully",
+      message: `${assignedRole.charAt(0).toUpperCase() + assignedRole.slice(1)} registered successfully`,
       token: generateToken(user._id, user.role),
     });
   } catch (error) {
@@ -48,18 +60,19 @@ exports.register = async (req, res) => {
   }
 };
 
-
-// 🔹 Login
+// 🔹 Login (Reviewer uses email and the password admin created, Student uses their own)
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Fetch the user
     const user = await User.findOne({ email });
 
     if (!user) {
       return res.status(400).json({ message: "Invalid credentials" });
     }
 
+    // Compare the entered password with the hashed password in the DB
     const isMatch = await bcrypt.compare(password, user.password);
 
     if (!isMatch) {

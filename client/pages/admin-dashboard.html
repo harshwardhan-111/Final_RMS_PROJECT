@@ -49,18 +49,52 @@
             <input type="password" id="reviewerPassword" placeholder="Password">
             <button onclick="createReviewer()">Create Reviewer</button>
         </div>
-
-        <!-- Create Event -->
         <div id="createEventSection" class="section hidden">
-            <h2>Create Event</h2>
-            <input type="text" id="eventTitle" placeholder="Title">
-            <input type="text" id="eventType" placeholder="Type">
-            <textarea id="eventDesc" placeholder="Description"></textarea>
-            <label for="eventStartDate">Start Date & Time:</label>
-            <input type="datetime-local" id="eventStartDate">
-            <label for="eventEndDate">End Date & Time:</label>
-            <input type="datetime-local" id="eventEndDate">
-            <button onclick="createEventHandler()">Create Event</button>
+            <h2>Create Event (Conference/Academic)</h2>
+            <input type="text" id="eventTitle" placeholder="Event Title">
+            
+            <select id="eventType">
+                <option value="Academic">Academic Project</option>
+                <option value="Conference">Conference</option>
+            </select>
+            
+            <textarea id="eventDesc" placeholder="Event Description"></textarea>
+            
+            <input type="text" id="eventBannerUrl" placeholder="Banner Image URL (Optional)">
+            
+            <div style="margin: 10px 0;">
+                <input type="checkbox" id="allowMultiple" style="width:auto; display:inline-block;">
+                <label for="allowMultiple">Allow Multiple Submissions per Student</label>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px;">
+                <div>
+                    <label>Overall Event Start:</label>
+                    <input type="datetime-local" id="eventStartDate">
+                </div>
+                <div>
+                    <label>Overall Event End:</label>
+                    <input type="datetime-local" id="eventEndDate">
+                </div>
+                <div>
+                    <label>Registration Start (Optional):</label>
+                    <input type="datetime-local" id="regStart">
+                </div>
+                <div>
+                    <label>Registration End (Optional):</label>
+                    <input type="datetime-local" id="regEnd">
+                </div>
+                <div>
+                    <label>Submission Start:</label>
+                    <input type="datetime-local" id="subStart">
+                </div>
+                <div>
+                    <label>Submission End:</label>
+                    <input type="datetime-local" id="subEnd">
+                </div>
+            </div>
+
+            <button onclick="createEventHandler()" style="margin-top: 20px;">Create Event</button>
         </div>
         
         <!-- View Events -->
@@ -72,6 +106,7 @@
         <!-- View Reviewers -->
         <div id="viewReviewersSection" class="section hidden">
             <h2>All Reviewers</h2>
+            <input type="text" id="searchReviewerInput" placeholder="🔍 Search by Reviewer Name or Event Name..." onkeyup="filterReviewers()" style="margin-bottom: 20px;">
             <div id="reviewerList"></div>
         </div>
 
