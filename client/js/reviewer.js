@@ -6,12 +6,17 @@ if (!token) {
 
 let currentEventId = null;
 
+// NEW: Global arrays to hold data for the Tracker to cross-reference
+let globalEventsData = []; 
+let globalAllSubmissions = [];
+
 function showSection(sectionId) {
     const sections = document.querySelectorAll(".section");
     sections.forEach(sec => sec.classList.add("hidden"));
     document.getElementById(sectionId).classList.remove("hidden");
 
     if(sectionId === 'assignedEventsSection') loadReviewerEvents();
+    if(sectionId === 'studentsTrackerSection') populateTrackerDropdown();
     if(sectionId === 'profileSection') loadProfile();
 }
 
@@ -25,7 +30,6 @@ async function loadProfile() {
     const user = await res.json();
     document.getElementById("revName").value = user.name;
     document.getElementById("revEmail").value = user.email;
-    // Show the actual plain password the admin created
     document.getElementById("revPassword").value = user.plainPassword || "(Password hidden/updated)";
 }
 
@@ -33,35 +37,113 @@ async function loadProfile() {
    LOAD REVIEWER EVENTS
 ========================================= */
 async function loadReviewerEvents() {
-    const res = await fetch("http://localhost:5000/api/events/reviewer", {
-        headers: { "Authorization": `Bearer ${token}` }
-    });
+    // We fetch both Events and Submissions simultaneously so the Tracker has all the data it needs
+    const [eventRes, subRes] = await Promise.all([
+        fetch("http://localhost:5000/api/events/reviewer", { headers: { Authorization: "Bearer " + token } }),
+        fetch("http://localhost:5000/api/submissions/reviewer", { headers: { Authorization: "Bearer " + token } })
+    ]);
 
-    const events = await res.json();
+    globalEventsData = await eventRes.json();
+    globalAllSubmissions = await subRes.json();
+
     const container = document.getElementById("eventList");
     container.innerHTML = "";
 
-    if (events.length === 0) {
+    if (globalEventsData.length === 0) {
         container.innerHTML = "<p>No events assigned to you yet.</p>";
         return;
     }
 
-    events.forEach(event => {
+    globalEventsData.forEach(event => {
         const card = document.createElement("div");
         card.className = "event-card";
         const bannerUrl = event.bannerImageUrl || "https://placehold.co/800x400?text=Event+Banner";
         
         card.innerHTML = `
-            <div class="event-banner" style="background-image: url('${bannerUrl}'); height: 100px;"></div>
-            <div class="event-content" style="padding: 15px;">
+            <div class="event-banner" style="background-image: url('${bannerUrl}'); height: 100px; background-size: cover; border-radius: 8px 8px 0 0;"></div>
+            <div class="event-content" style="padding: 15px; border: 1px solid #eee; border-top: none; border-radius: 0 0 8px 8px; background: white;">
                 <h4 style="margin: 5px 0;">${event.title}</h4>
                 <p>Status: <strong>${event.status.toUpperCase()}</strong></p>
-                <button onclick="selectEvent('${event._id}', '${event.title}')" style="width: 100%;">View Submissions</button>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="selectEvent('${event._id}', '${event.title}')" style="flex: 1; padding: 8px; background: #0f7dff; color: white; border: none; border-radius: 5px; cursor: pointer;">View Submissions</button>
+                    <button onclick="jumpToTracker('${event._id}')" style="padding: 8px 15px; background: #6c757d; color: white; border: none; border-radius: 5px; cursor: pointer;" title="View Student Tracker">👥</button>
+                </div>
             </div>
         `;
         container.appendChild(card);
     });
 }
+
+/* =========================================
+   STUDENTS TRACKER LOGIC (NEWLY ADDED)
+========================================= */
+function populateTrackerDropdown() {
+    const selector = document.getElementById("eventTrackerSelector");
+    const currentVal = selector.value;
+    
+    selector.innerHTML = '<option value="">-- Select an Event to Track --</option>';
+    globalEventsData.forEach(ev => {
+        selector.innerHTML += `<option value="${ev._id}" ${ev._id === currentVal ? 'selected' : ''}>${ev.title}</option>`;
+    });
+}
+
+window.jumpToTracker = function(eventId) {
+    showSection('studentsTrackerSection');
+    document.getElementById("eventTrackerSelector").value = eventId;
+    loadTrackerData(eventId);
+};
+
+window.loadTrackerData = function(eventId) {
+    if (!eventId) {
+        document.getElementById('trackerDetails').classList.add('hidden');
+        return;
+    }
+    document.getElementById('trackerDetails').classList.remove('hidden');
+
+    const event = globalEventsData.find(e => e._id === eventId);
+    
+    // Cross-reference students who joined with global submissions
+    const mergedList = event.students.map(student => {
+        const submission = globalAllSubmissions.find(s => s.student._id === student._id && s.event._id === eventId);
+        return {
+            name: student.name,
+            email: student.email,
+            college: student.collegeName || "Not Provided",
+            status: submission ? submission.status : "Pending (No File)",
+            hasSubmitted: !!submission
+        };
+    });
+
+    // Update Top Stats
+    document.getElementById("statJoined").innerText = mergedList.length;
+    document.getElementById("statSubmitted").innerText = mergedList.filter(s => s.hasSubmitted).length;
+
+    // Render Table
+    const tbody = document.getElementById("trackerTableBody");
+    tbody.innerHTML = mergedList.map(s => `
+        <tr class="tracker-row">
+            <td style="padding: 12px; border-bottom: 1px solid #eee;">
+                <strong>${s.name}</strong><br><small style="color: #666;">${s.email}</small>
+            </td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee;">${s.college}</td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee;">
+                <span style="padding: 5px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; background: ${s.hasSubmitted ? '#dcfce7' : '#fff3cd'}; color: ${s.hasSubmitted ? '#166534' : '#856404'};">
+                    ${s.status}
+                </span>
+            </td>
+        </tr>
+    `).join("");
+};
+
+window.filterTrackerTable = function() {
+    const query = document.getElementById("trackerSearch").value.toLowerCase();
+    const rows = document.querySelectorAll(".tracker-row");
+    
+    rows.forEach(row => {
+        const textContent = row.innerText.toLowerCase();
+        row.style.display = textContent.includes(query) ? "" : "none";
+    });
+};
 
 /* =========================================
    SELECT EVENT & SHOW SUBMISSIONS
@@ -71,25 +153,15 @@ window.selectEvent = async function (eventId, eventTitle) {
     document.getElementById('subEventTitle').innerText = `Submissions for: ${eventTitle}`;
     showSection('submissionsSection');
 
-    try {
-        const subRes = await fetch("http://localhost:5000/api/submissions/reviewer", {
-            headers: { Authorization: "Bearer " + token }
-        });
-        const submissions = await subRes.json();
-        const filtered = submissions.filter(s => s.event._id === eventId);
-        displaySubmissions(filtered);
-    } catch (err) {
-        console.error("Error fetching data:", err);
-    }
+    // Use globalAllSubmissions to instantly display data without extra API calls
+    const filtered = globalAllSubmissions.filter(s => s.event._id === eventId);
+    displaySubmissions(filtered);
 };
 
 /* =========================================
-   DISPLAY SUBMISSIONS TABLE (Fixes Tiny Box Issue)
+   DISPLAY SUBMISSIONS TABLE
 ========================================= */
-let globalSubmissionsData = []; // Store locally so we can read the review later
-
 function displaySubmissions(submissions) {
-  globalSubmissionsData = submissions;
   const table = document.getElementById("submissionTable");
   
   if (submissions.length === 0) {
@@ -100,28 +172,27 @@ function displaySubmissions(submissions) {
   table.innerHTML = `
     <table border="1" width="100%" style="border-collapse: collapse; text-align: left;">
       <tr style="background-color: #f8f9fa;">
-        <th style="padding: 10px;">Student Details</th>
-        <th style="padding: 10px;">Submitted File</th>
-        <th style="padding: 10px;">AI Status</th>
-        <th style="padding: 10px; width: 30%;">Action</th>
+        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Student Details</th>
+        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Submitted File</th>
+        <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">AI Status</th>
+        <th style="padding: 12px; border-bottom: 2px solid #dee2e6; width: 30%;">Action</th>
       </tr>
       ${submissions.map(sub => `
         <tr>
-          <td style="padding: 10px;">
+          <td style="padding: 12px; border-bottom: 1px solid #eee;">
             <strong>${sub.student.name}</strong><br>
-            <small>${sub.student.email}</small>
+            <small style="color: #666;">${sub.student.email}</small>
           </td>
-          <td style="padding: 10px;">
-            <a href="http://localhost:5000/${sub.filePath.replace(/\\/g, "/")}" target="_blank" class="preview-link">📄 View File</a>
+          <td style="padding: 12px; border-bottom: 1px solid #eee;">
+            <a href="http://localhost:5000/${sub.filePath.replace(/\\/g, "/")}" target="_blank" style="color: #0f7dff; text-decoration: none; font-weight: bold;">📄 View File</a>
           </td>
-          <td style="padding: 10px;">
-            <span class="status-badge status-${sub.status}">${sub.status}</span>
+          <td style="padding: 12px; border-bottom: 1px solid #eee;">
+            <span style="padding: 5px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; background: #e2e8f0; color: #334155;">${sub.status}</span>
           </td>
-          <td style="padding: 10px;">
+          <td style="padding: 12px; border-bottom: 1px solid #eee;">
             ${(sub.status === 'ai-reviewed' || sub.status === 'approved')
-              // Display a button to open the full review instead of a cramped text box
-              ? `<button class="approve" onclick="viewFullReview('${sub._id}')" style="width:100%;">📖 Read Full Review</button>` 
-              : `<button onclick="generateReview('${sub._id}')" style="width:100%;">Generate AI Review</button>`
+              ? `<button onclick="viewFullReview('${sub._id}')" style="width:100%; padding: 8px; background: #198754; color: white; border: none; border-radius: 5px; cursor: pointer;">📖 Read Full Review</button>` 
+              : `<button onclick="generateReview('${sub._id}')" style="width:100%; padding: 8px; background: #0f7dff; color: white; border: none; border-radius: 5px; cursor: pointer;">Generate AI Review</button>`
             }
           </td>
         </tr>
@@ -134,10 +205,10 @@ function displaySubmissions(submissions) {
    VIEW FULL GENERATED REVIEW IN SIDEBAR
 ========================================= */
 window.viewFullReview = function(submissionId) {
-    const submission = globalSubmissionsData.find(s => s._id === submissionId);
+    const submission = globalAllSubmissions.find(s => s._id === submissionId);
     if(submission && submission.aiFeedback) {
         document.getElementById('fullReviewContent').innerText = submission.aiFeedback;
-        document.getElementById('navFullReview').style.display = 'block'; // Unhide nav item
+        document.getElementById('navFullReview').style.display = 'block'; 
         showSection('fullReviewSection');
     }
 }
@@ -147,7 +218,7 @@ window.viewFullReview = function(submissionId) {
 ========================================= */
 window.generateReview = async function (submissionId) {
   try {
-    alert("Analyzing PDF with Gemini... This takes about 10-20 seconds.");
+    alert("Analyzing Document with Gemini... This takes about 10-20 seconds.");
 
     const res = await fetch("http://localhost:5000/api/submissions/review", {
       method: "PUT",
@@ -161,11 +232,12 @@ window.generateReview = async function (submissionId) {
     const data = await res.json();
     
     if (res.ok) {
-        // Find the event title to reload the page correctly
+        // Refresh the global data so the new status applies
+        await loadReviewerEvents(); 
+
         const eventTitle = document.getElementById('subEventTitle').innerText.replace("Submissions for: ", "");
         selectEvent(currentEventId, eventTitle); 
         
-        // Immediately show the new review
         setTimeout(() => { viewFullReview(submissionId); }, 500);
     } else {
         alert("Error: " + data.message);
@@ -177,5 +249,7 @@ window.generateReview = async function (submissionId) {
 };
 
 window.onload = function () {
-  showSection('assignedEventsSection');
+  loadReviewerEvents().then(() => {
+      showSection('assignedEventsSection');
+  });
 };

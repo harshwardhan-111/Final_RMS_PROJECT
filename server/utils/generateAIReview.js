@@ -1,6 +1,6 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const generateAIReview = async (textContent, fileInlineData = null) => {
+const generateAIReview = async (textContent, fileInlineData = null, eventDetails = null) => {
   try {
     if (!process.env.GEMINI_API_KEY) {
       throw new Error("GEMINI_API_KEY is missing from environment variables.");
@@ -8,31 +8,46 @@ const generateAIReview = async (textContent, fileInlineData = null) => {
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     
-    const promptText = `You are a professional academic reviewer. Review the following student submission and provide constructive, detailed feedback. 
+    // Inject event context if available
+    const eventContext = eventDetails 
+      ? `\n\n### 🏢 EVENT CONTEXT\n**Event Title:** ${eventDetails.title}\n**Event Description:** ${eventDetails.description}\n\nIMPORTANT INSTRUCTION: Evaluate the student's submission specifically against the Event Context provided above. Does the submission fulfill the requirements and goals of this specific event?`
+      : '';
+
+    const promptText = `You are an expert academic and professional reviewer. Review the following student submission.
+    ${eventContext}
     
-Please format your response strictly using the following structure:
+Please format your response strictly using the following Markdown structure:
 
 ### 📝 Overall Summary
-(Provide a brief summary of the submission)
+(Provide a brief, objective summary of the submission)
 
-### ✅ Strengths
-* (List key strengths)
+### 🎯 Relevance to Event
+(Evaluate how well the submission aligns with the Event Title and Description. Does it follow the brief?)
 
-### 🎯 Areas for Improvement
-* (List specific areas needing improvement)
+### 💡 Novelty & Innovation
+(Assess the uniqueness, creativity, and original thinking in the proposed solution/research)
 
-### 💡 Actionable Suggestions
-* (Give concrete steps the student can take to improve)
+### 📈 Expected Outcomes & Impact
+(Evaluate the potential real-world impact, feasibility, and expected outcomes of this work)
 
-### 📊 Suggested Grade/Rating
-(Provide a qualitative rating, e.g., Excellent, Good, Needs Work)
+### ✅ Strengths & 🛠 Areas for Improvement
+* **Strength:** (List a key strength)
+* **Strength:** (List a key strength)
+* **Improvement:** (Give a concrete, actionable step to improve)
+* **Improvement:** (Give a concrete, actionable step to improve)
+
+### 📊 Scoring Breakdown
+* **Relevance:** x/10
+* **Novelty:** x/10
+* **Impact/Feasibility:** x/10
+* **Execution/Clarity:** x/10
+* **Overall Score:** x/10
 
 Here is the student's submission:
 --------------------------------------------------
 ${textContent || "(Please read the attached file)"}
 --------------------------------------------------`;
 
-    // Package the prompt and the file together
     const requestContent = [promptText];
     if (fileInlineData) {
         requestContent.push(fileInlineData);

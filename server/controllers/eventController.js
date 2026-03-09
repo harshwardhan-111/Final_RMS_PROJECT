@@ -185,12 +185,24 @@ exports.getStudentEvents = async (req, res) => {
   } catch (error) { res.status(500).json({ message: error.message }); }
 };
 
+/* =========================================
+   GET REVIEWER ASSIGNED EVENTS
+========================================= */
 exports.getReviewerEvents = async (req, res) => {
   try {
-    let events = await Event.find({ reviewers: req.user.id }).sort({ createdAt: -1 });
+    let events = await Event.find({
+      reviewers: req.user.id
+    })
+    .populate("students", "name email collegeName") // <-- Added this to get student profiles
+    .sort({ createdAt: -1 });
+
     events = await updateStatusesByDate(events);
+
     res.status(200).json(events);
-  } catch (error) { res.status(500).json({ message: error.message }); }
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 };
 
 exports.deleteEvent = async (req, res) => {

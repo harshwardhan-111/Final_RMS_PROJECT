@@ -88,7 +88,9 @@ exports.getReviewerSubmissions = async (req, res) => {
 exports.reviewSubmission = async (req, res) => {
   try {
     const { submissionId } = req.body;
-    const submission = await Submission.findById(submissionId);
+    
+    // 1. UPDATED: Populate the event title and description
+    const submission = await Submission.findById(submissionId).populate("event", "title description");
 
     if (!submission) {
       return res.status(404).json({ message: "Submission not found" });
@@ -101,24 +103,13 @@ exports.reviewSubmission = async (req, res) => {
     if (fs.existsSync(filePath)) {
       const ext = path.extname(submission.fileName).toLowerCase();
       
-      // 🚀 Send PDFs and Images DIRECTLY to Gemini!
       if (ext === '.pdf') {
           const fileBuffer = fs.readFileSync(filePath);
-          fileInlineData = {
-              inlineData: {
-                  data: fileBuffer.toString("base64"),
-                  mimeType: "application/pdf"
-              }
-          };
+          fileInlineData = { inlineData: { data: fileBuffer.toString("base64"), mimeType: "application/pdf" } };
       } else if (['.png', '.jpg', '.jpeg', '.webp'].includes(ext)) {
           const fileBuffer = fs.readFileSync(filePath);
           const mimeType = ext === '.png' ? 'image/png' : (ext === '.webp' ? 'image/webp' : 'image/jpeg');
-          fileInlineData = {
-              inlineData: {
-                  data: fileBuffer.toString("base64"),
-                  mimeType: mimeType
-              }
-          };
+          fileInlineData = { inlineData: { data: fileBuffer.toString("base64"), mimeType: mimeType } };
       } else if (['.txt', '.md', '.html', '.js', '.css', '.csv'].includes(ext)) {
           extractedText = fs.readFileSync(filePath, 'utf8');
       } else {
@@ -130,8 +121,14 @@ exports.reviewSubmission = async (req, res) => {
 
     const textToReview = extractedText.substring(0, 25000);
     
-    // Pass both the text (if any) and the actual File Data to Gemini
-    const aiFeedback = await generateAIReview(textToReview, fileInlineData);
+    // 2. UPDATED: Create the event context object
+    const eventDetails = {
+        title: submission.event.title,
+        description: submission.event.description
+    };
+
+    // 3. UPDATED: Pass the event details to the AI
+    const aiFeedback = await generateAIReview(textToReview, fileInlineData, eventDetails);
 
     submission.aiFeedback = aiFeedback;
     submission.status = "ai-reviewed";
