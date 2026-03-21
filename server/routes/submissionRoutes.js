@@ -6,7 +6,11 @@ const {
   uploadSubmission,
   getMySubmissions,
   getReviewerSubmissions,
-  reviewSubmission
+  reviewSubmission,
+  acceptAIReview,
+  rejectAIReview,
+  submitManualReview,
+  deleteSubmission
 } = require("../controllers/submissionController");
 
 
@@ -52,4 +56,33 @@ router.put(
   roleMiddleware(["reviewer"]),
   reviewSubmission
 );
+
+router.post(
+  "/accept",
+  authMiddleware,
+  roleMiddleware(["reviewer"]),
+  acceptAIReview
+);
+
+router.post(
+  "/reject",
+  authMiddleware,
+  roleMiddleware(["reviewer"]),
+  rejectAIReview
+);
+
+router.post(
+  "/manual-review",
+  authMiddleware,
+  roleMiddleware(["reviewer"]),
+  submitManualReview
+);
+
+router.delete(
+  "/:id",
+  authMiddleware,
+  roleMiddleware(["student"]),
+  deleteSubmission
+);
+
 module.exports = router;

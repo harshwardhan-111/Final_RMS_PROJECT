@@ -36,8 +36,16 @@ const submissionSchema = new mongoose.Schema(
 
     status: {
       type: String,
-      enum: ["pending", "ai-reviewed", "approved", "rejected"],
+      enum: ["pending", "ai-reviewed", "approved", "rejected", "AI Review Accepted", "AI Review Rejected"],
       default: "pending"
+    },
+    aiReviewStatus: {
+      type: String,
+      enum: ["pending", "accepted", "rejected"],
+      default: "pending"
+    },
+    reviewerDecisionTimestamp: {
+      type: Date
     }
   },
   { timestamps: true }

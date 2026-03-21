@@ -88,7 +88,7 @@ exports.getReviewerSubmissions = async (req, res) => {
 exports.reviewSubmission = async (req, res) => {
   try {
     const { submissionId } = req.body;
-    
+
     // 1. UPDATED: Populate the event title and description
     const submission = await Submission.findById(submissionId).populate("event", "title description");
 
@@ -102,29 +102,29 @@ exports.reviewSubmission = async (req, res) => {
 
     if (fs.existsSync(filePath)) {
       const ext = path.extname(submission.fileName).toLowerCase();
-      
+
       if (ext === '.pdf') {
-          const fileBuffer = fs.readFileSync(filePath);
-          fileInlineData = { inlineData: { data: fileBuffer.toString("base64"), mimeType: "application/pdf" } };
+        const fileBuffer = fs.readFileSync(filePath);
+        fileInlineData = { inlineData: { data: fileBuffer.toString("base64"), mimeType: "application/pdf" } };
       } else if (['.png', '.jpg', '.jpeg', '.webp'].includes(ext)) {
-          const fileBuffer = fs.readFileSync(filePath);
-          const mimeType = ext === '.png' ? 'image/png' : (ext === '.webp' ? 'image/webp' : 'image/jpeg');
-          fileInlineData = { inlineData: { data: fileBuffer.toString("base64"), mimeType: mimeType } };
+        const fileBuffer = fs.readFileSync(filePath);
+        const mimeType = ext === '.png' ? 'image/png' : (ext === '.webp' ? 'image/webp' : 'image/jpeg');
+        fileInlineData = { inlineData: { data: fileBuffer.toString("base64"), mimeType: mimeType } };
       } else if (['.txt', '.md', '.html', '.js', '.css', '.csv'].includes(ext)) {
-          extractedText = fs.readFileSync(filePath, 'utf8');
+        extractedText = fs.readFileSync(filePath, 'utf8');
       } else {
-          extractedText = `[System Note: File format (${ext}) not supported. File Name: ${submission.fileName}]`;
+        extractedText = `[System Note: File format (${ext}) not supported. File Name: ${submission.fileName}]`;
       }
     } else {
       extractedText = `[System Note: File not found on server. File Name: ${submission.fileName}]`;
     }
 
     const textToReview = extractedText.substring(0, 25000);
-    
+
     // 2. UPDATED: Create the event context object
     const eventDetails = {
-        title: submission.event.title,
-        description: submission.event.description
+      title: submission.event.title,
+      description: submission.event.description
     };
 
     // 3. UPDATED: Pass the event details to the AI
@@ -141,6 +141,88 @@ exports.reviewSubmission = async (req, res) => {
 
   } catch (error) {
     console.error("Review Error:", error);
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/* =========================================
+   REVIEWER ACCEPT / REJECT AI REVIEW
+======================================== */
+exports.acceptAIReview = async (req, res) => {
+  try {
+    const { submissionId } = req.body;
+    const submission = await Submission.findById(submissionId);
+    if (!submission) return res.status(404).json({ message: "Submission not found" });
+
+    submission.aiReviewStatus = "accepted";
+    submission.status = "AI Review Accepted";
+    submission.reviewerDecisionTimestamp = new Date();
+    await submission.save();
+
+    res.status(200).json({ message: "AI review accepted successfully", submission });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.rejectAIReview = async (req, res) => {
+  try {
+    const { submissionId } = req.body;
+    const submission = await Submission.findById(submissionId);
+    if (!submission) return res.status(404).json({ message: "Submission not found" });
+
+    submission.aiReviewStatus = "rejected";
+    submission.status = "AI Review Rejected";
+    submission.reviewerDecisionTimestamp = new Date();
+    await submission.save();
+
+    res.status(200).json({ message: "AI review rejected successfully", submission });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+exports.submitManualReview = async (req, res) => {
+  try {
+    const { submissionId, feedback } = req.body;
+    const submission = await Submission.findById(submissionId);
+    if (!submission) return res.status(404).json({ message: "Submission not found" });
+
+    submission.reviewerFeedback = feedback;
+    submission.status = "AI Review Rejected";
+    await submission.save();
+
+    res.status(200).json({ message: "Manual review updated successfully", submission });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+/* =========================================
+   STUDENT DELETE SUBMISSION
+======================================== */
+exports.deleteSubmission = async (req, res) => {
+  try {
+    const submission = await Submission.findById(req.params.id);
+
+    if (!submission) {
+      return res.status(404).json({ message: "Submission not found" });
+    }
+
+    // Only the student who submitted can delete it
+    if (submission.student.toString() !== req.user.id) {
+      return res.status(403).json({ message: "You are not authorized to delete this submission" });
+    }
+
+    // Prevent deletion if already reviewed
+    const lockedStatuses = ["AI Review Accepted", "AI Review Rejected", "approved", "ai-reviewed"];
+    if (lockedStatuses.includes(submission.status) || submission.reviewerFeedback) {
+      return res.status(400).json({ message: "This submission has already been reviewed and cannot be deleted." });
+    }
+
+    await Submission.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: "Submission deleted successfully" });
+  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };

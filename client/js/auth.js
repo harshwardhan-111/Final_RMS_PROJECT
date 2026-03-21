@@ -40,25 +40,26 @@ async function login() {
   const data = await res.json();
 
   if (res.ok) {
-  localStorage.setItem("token", data.token);
-  localStorage.setItem("role", data.role);
+    localStorage.setItem("token", data.token);
+    localStorage.setItem("role", data.role);
 
-  if (data.role === "student") {
-  window.location.href = "student-dashboard.html";
-} 
-else if (data.role === "reviewer") {
-  window.location.href = "reviewer-dashboard.html";
-}
-else if (data.role === "admin") {
-  window.location.href = "admin-dashboard.html";
-}
+    if (data.role === "student") {
+      window.location.href = "student-dashboard.html";
+    }
+    else if (data.role === "reviewer") {
+      window.location.href = "reviewer-dashboard.html";
+    }
+    else if (data.role === "admin") {
+      window.location.href = "admin-dashboard.html";
+    }
 
- else {
-    alert(data.message);
+    else {
+      alert(data.message);
+    }
   }
-}
 }
 function logout() {
   localStorage.removeItem("token");
   window.location.href = "login.html";
 }
+
