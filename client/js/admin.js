@@ -39,7 +39,7 @@ async function createEventHandler() {
     const description = document.getElementById("eventDesc").value;
     const bannerImageUrl = document.getElementById("eventBannerUrl").value;
     const allowMultipleSubmissions = document.getElementById("allowMultiple").checked;
-    
+
     const startDate = document.getElementById("eventStartDate").value;
     const endDate = document.getElementById("eventEndDate").value;
     const registrationStartDate = document.getElementById("regStart").value;
@@ -59,7 +59,7 @@ async function createEventHandler() {
 
     const data = await res.json();
     alert(data.message);
-    if(res.ok) {
+    if (res.ok) {
         document.getElementById("createEventSection").querySelectorAll('input:not([type="checkbox"]), textarea').forEach(el => el.value = '');
         showSection('viewEventsSection');
     }
@@ -244,7 +244,7 @@ function renderReviewers(reviewers) {
     reviewers.forEach(r => {
         const card = document.createElement("div");
         card.className = "card";
-        
+
         const assignedEventsHtml = r.assignedEvents && r.assignedEvents.length > 0
             ? r.assignedEvents.map(e => `<span class="badge">${e.title}</span>`).join(" ")
             : "<em>No events assigned</em>";
@@ -312,7 +312,7 @@ async function deleteEvent(eventId) {
         });
 
         const data = await res.json();
-        
+
         if (res.ok) {
             alert("Event deleted successfully");
             loadEvents(); // Refresh the events list
@@ -325,3 +325,4 @@ async function deleteEvent(eventId) {
     }
 }
 loadEvents();
+

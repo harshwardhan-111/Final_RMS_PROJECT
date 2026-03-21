@@ -14,7 +14,7 @@ const authRoutes = require("./routes/authRoutes");
 app.use("/api/auth", authRoutes);
 
 app.get("/", (req, res) => {
-  res.send("AI Review Management System API Running...");
+  res.redirect("/pages/welcome.html");
 });
 const eventRoutes = require("./routes/eventRoutes");
 app.use("/api/events", eventRoutes);
