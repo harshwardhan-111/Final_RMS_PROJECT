@@ -83,6 +83,12 @@ window.joinEvent = async function () {
    LOAD MY EVENTS
 ========================================= */
 async function loadMyEvents() {
+    // Get current user info for identification
+    const userRes = await fetch("http://localhost:5000/api/auth/me", {
+        headers: { "Authorization": `Bearer ${token}` }
+    });
+    const currentUser = await userRes.json();
+
     const res = await fetch("http://localhost:5000/api/events/student", {
         headers: { "Authorization": `Bearer ${token}` }
     });
@@ -98,6 +104,26 @@ async function loadMyEvents() {
         const bannerUrl = event.bannerImageUrl || "https://via.placeholder.com/800x400?text=Event+Banner";
         const typeClass = event.type === 'Academic' ? 'badge-academic' : 'badge-conference';
 
+        // Find this student's specific reviewer assignment
+        const myAssignment = event.assignments ? event.assignments.find(a => {
+            const assignmentStudentId = a.student && a.student._id ? a.student._id : a.student;
+            const myCurrentId = currentUser._id || currentUser.id;
+            
+            // Console log for debugging just in case
+            // console.log("Comparing:", assignmentStudentId, "with", myCurrentId);
+            
+            return String(assignmentStudentId) === String(myCurrentId);
+        }) : null;
+
+        const reviewerInfo = myAssignment && myAssignment.reviewer && myAssignment.reviewer.name
+            ? `<div style="margin-top: 10px; padding: 10px; background: #f0f7ff; border: 1px dashed #007bff; border-radius: 5px; font-size: 0.85rem;">
+                 <strong>👤 Assigned Reviewer:</strong><br>
+                 ${myAssignment.reviewer.name} (${myAssignment.reviewer.email || 'N/A'})
+               </div>`
+            : `<div style="margin-top: 10px; padding: 10px; background: #fffcf0; border: 1px dashed #e6c200; border-radius: 5px; font-size: 0.85rem; color: #856404;">
+                 🕒 Reviewer not yet assigned
+               </div>`;
+
         card.innerHTML = `
             <div class="event-banner" style="background-image: url('${bannerUrl}')"></div>
             <div class="event-content">
@@ -108,6 +134,9 @@ async function loadMyEvents() {
                 <h3 style="margin: 0 0 10px 0;">${event.title}</h3>
                 <p style="font-size: 0.9rem; color: #555;">${event.description.substring(0, 80)}...</p>
                 <div class="date-info">🗓 Submission Phase: <br> ${event.submissionStartDate ? new Date(event.submissionStartDate).toLocaleDateString() : 'TBA'} - ${event.submissionEndDate ? new Date(event.submissionEndDate).toLocaleDateString() : 'TBA'}</div>
+                
+                ${reviewerInfo}
+
                 <button onclick="openEventWorkspace('${event._id}')" style="width: 100%; margin-top: 15px;">Enter Workspace</button>
             </div>
         `;

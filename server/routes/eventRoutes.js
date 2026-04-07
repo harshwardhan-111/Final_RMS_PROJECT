@@ -12,7 +12,8 @@ const {
   getAllReviewers,
   getStudentEvents,
   deleteReviewer,
-  deleteEvent // <-- Add this here
+  deleteEvent,
+  getEventTracker,
 } = eventController;
 
 const authMiddleware = require("../middleware/authMiddleware");
@@ -72,6 +73,14 @@ router.get(
   authMiddleware,
   roleMiddleware(["admin"]),
   getAllReviewers
+);
+
+/* ADMIN GET EVENT TRACKER */
+router.get(
+  "/tracker/:eventId",
+  authMiddleware,
+  roleMiddleware(["admin"]),
+  getEventTracker
 );
 
 /* ADMIN DELETE REVIEWER */

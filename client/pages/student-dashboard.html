@@ -1,83 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Student Dashboard</title>
     <link rel="stylesheet" href="../css/global.css">
     <link rel="stylesheet" href="../css/dashboard.css">
 </head>
+
 <body>
 
-<div class="layout">
-    <div class="sidebar">
-        <h2>Student Panel</h2>
-        <div class="menu-item" onclick="showSection('myEventsSection')">📚 My Events</div>
-        <div class="menu-item" onclick="showSection('joinEventSection')">➕ Join Event</div>
-        <div class="menu-item" onclick="showSection('submissionsSection')">📄 All Submissions</div>
-        <div class="menu-item" onclick="showSection('profileSection')">👤 My Profile</div>
-        <div class="menu-item logout" onclick="logout()">🚪 Logout</div>
+    <div class="layout">
+        <div class="sidebar">
+            <h2>Student Dashboard</h2>
+            <div class="menu-item" onclick="showSection('myEventsSection')">📚 My Events</div>
+            <div class="menu-item" onclick="showSection('joinEventSection')">➕ Join Event</div>
+            <div class="menu-item" onclick="showSection('submissionsSection')">📄 All Submissions</div>
+            <div class="menu-item" onclick="showSection('profileSection')">👤 My Profile</div>
+            <div class="menu-item logout" onclick="logout()">🚪 Logout</div>
+        </div>
+
+        <div class="content">
+
+            <div id="profileSection" class="section hidden">
+                <h2>My Profile</h2>
+                <div class="profile-card">
+                    <div class="profile-field">
+                        <label>Full Name:</label>
+                        <input type="text" id="profName">
+                    </div>
+                    <div class="profile-field">
+                        <label>Email ID (Read-only):</label>
+                        <input type="email" id="profEmail" disabled style="background:#f1f3f5;">
+                    </div>
+                    <div class="profile-field">
+                        <label>Password (Hidden/Encrypted):</label>
+                        <input type="text" value="********" disabled style="background:#f1f3f5;">
+                    </div>
+                    <div class="profile-field">
+                        <label>College/University Name:</label>
+                        <input type="text" id="profCollege" placeholder="e.g., Galgotias University">
+                    </div>
+                    <div class="profile-field">
+                        <label>Degree / Branch:</label>
+                        <input type="text" id="profDegree" placeholder="e.g., B.Tech Computer Science">
+                    </div>
+                    <div class="profile-field">
+                        <label>Phone Number:</label>
+                        <input type="text" id="profPhone" placeholder="+91 xxxxxxxxxx">
+                    </div>
+                    <button onclick="updateProfile()" style="width:100%; margin-top:15px;">Save Profile Updates</button>
+                </div>
+            </div>
+
+            <div id="joinEventSection" class="section hidden">
+                <h2>Join a New Event</h2>
+                <div class="card" style="max-width: 500px;">
+                    <input type="text" id="eventCode" placeholder="Enter Event Code (e.g. ABCD1234)">
+                    <button onclick="joinEvent()" style="width: 100%;">Join Event</button>
+                </div>
+            </div>
+
+            <div id="myEventsSection" class="section">
+                <h2>My Joined Events</h2>
+                <div id="eventList"
+                    style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                </div>
+            </div>
+
+            <div id="eventWorkspaceSection" class="section hidden">
+                <button onclick="showSection('myEventsSection')" style="background:#6c757d; margin-bottom: 20px;">← Back
+                    to Events</button>
+                <div id="workspaceContent"></div>
+            </div>
+
+            <div id="submissionsSection" class="section hidden">
+                <h2>All My Submissions</h2>
+                <div id="submissionList"></div>
+            </div>
+
+        </div>
     </div>
 
-    <div class="content">
-        
-        <div id="profileSection" class="section hidden">
-            <h2>My Profile</h2>
-            <div class="profile-card">
-                <div class="profile-field">
-                    <label>Full Name:</label>
-                    <input type="text" id="profName">
-                </div>
-                <div class="profile-field">
-                    <label>Email ID (Read-only):</label>
-                    <input type="email" id="profEmail" disabled style="background:#f1f3f5;">
-                </div>
-                <div class="profile-field">
-                    <label>Password (Hidden/Encrypted):</label>
-                    <input type="text" value="********" disabled style="background:#f1f3f5;">
-                </div>
-                <div class="profile-field">
-                    <label>College/University Name:</label>
-                    <input type="text" id="profCollege" placeholder="e.g., Galgotias University">
-                </div>
-                <div class="profile-field">
-                    <label>Degree / Branch:</label>
-                    <input type="text" id="profDegree" placeholder="e.g., B.Tech Computer Science">
-                </div>
-                <div class="profile-field">
-                    <label>Phone Number:</label>
-                    <input type="text" id="profPhone" placeholder="+91 xxxxxxxxxx">
-                </div>
-                <button onclick="updateProfile()" style="width:100%; margin-top:15px;">Save Profile Updates</button>
-            </div>
-        </div>
-
-        <div id="joinEventSection" class="section hidden">
-            <h2>Join a New Event</h2>
-            <div class="card" style="max-width: 500px;">
-                <input type="text" id="eventCode" placeholder="Enter Event Code (e.g. ABCD1234)">
-                <button onclick="joinEvent()" style="width: 100%;">Join Event</button>
-            </div>
-        </div>
-
-        <div id="myEventsSection" class="section">
-            <h2>My Joined Events</h2>
-            <div id="eventList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;"></div>
-        </div>
-
-        <div id="eventWorkspaceSection" class="section hidden">
-            <button onclick="showSection('myEventsSection')" style="background:#6c757d; margin-bottom: 20px;">← Back to Events</button>
-            <div id="workspaceContent"></div>
-        </div>
-
-        <div id="submissionsSection" class="section hidden">
-            <h2>All My Submissions</h2>
-            <div id="submissionList"></div>
-        </div>
-
-    </div>
-</div>
-
-<script src="../js/auth.js"></script>
-<script src="../js/student.js"></script>
+    <script src="../js/auth.js"></script>
+    <script src="../js/student.js"></script>
 </body>
+
 </html>

@@ -32,6 +32,56 @@ async function loadProfile() {
   document.getElementById("revName").value = user.name;
   document.getElementById("revEmail").value = user.email;
   document.getElementById("revPassword").value = user.plainPassword || "(Password hidden/updated)";
+
+  const ratingValue = document.getElementById("revRatingValue");
+  if (ratingValue) {
+    ratingValue.innerText = (typeof user.rating === 'number') ? user.rating.toFixed(2) : "0.00";
+  }
+
+  if (user.technicalDomains) {
+    const domainSelect = document.getElementById("revDomains");
+    const activeDomains = document.getElementById("activeDomains");
+    
+    if (activeDomains) {
+      activeDomains.value = user.technicalDomains.join(", ");
+    }
+    
+    if (domainSelect) {
+      Array.from(domainSelect.options).forEach(opt => {
+        opt.selected = user.technicalDomains.includes(opt.value);
+      });
+    }
+  }
+}
+
+window.updateReviewerProfile = async function () {
+  const domainSelect = document.getElementById("revDomains");
+  const technicalDomains = Array.from(domainSelect.selectedOptions).map(opt => opt.value);
+
+  try {
+    const res = await fetch("http://localhost:5000/api/auth/profile", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+      },
+      body: JSON.stringify({ technicalDomains })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert("Technical Domains updated successfully!");
+      // Update visual display
+      const activeDomains = document.getElementById("activeDomains");
+      if (activeDomains) {
+        activeDomains.value = technicalDomains.join(", ");
+      }
+    } else {
+      alert("Error: " + data.message);
+    }
+  } catch (error) {
+    console.error(error);
+    alert("Failed to update profile.");
+  }
 }
 
 /* =========================================

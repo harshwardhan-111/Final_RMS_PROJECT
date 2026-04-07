@@ -12,6 +12,12 @@ const eventSchema = new mongoose.Schema(
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     reviewers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     students: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    assignments: [
+      {
+        student: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+        reviewer: { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+      }
+    ],
 
     status: {
       type: String,
