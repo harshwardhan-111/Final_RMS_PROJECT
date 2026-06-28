@@ -13,6 +13,13 @@ const userSchema = new mongoose.Schema(
     },
     organization: { type: String, default: "Default Organization" },
 
+    // Reviewer Rating Fields
+    rating: { type: Number, default: 0 },
+    totalReviews: { type: Number, default: 0 },
+    avgAccuracy: { type: Number, default: 0 },
+    avgTimeliness: { type: Number, default: 0 },
+    technicalDomains: { type: [String], default: [] },
+
     // Additional Student Profile Fields
     collegeName: { type: String, default: "" },
     phoneNumber: { type: String, default: "" },

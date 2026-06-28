@@ -1,5 +1,6 @@
 const Event = require("../models/Event");
 const User = require("../models/User");
+const Submission = require("../models/Submission");
 const generateEventCode = require("../utils/generateEventCode");
 
 /* =========================================
@@ -68,22 +69,74 @@ exports.joinEvent = async (req, res) => {
 ========================================= */
 exports.assignReviewer = async (req, res) => {
   try {
-    const { eventId, reviewerId } = req.body;
-    if (!eventId || !reviewerId) return res.status(400).json({ message: "Missing IDs" });
+    const { eventId, reviewerIds } = req.body;
+    if (!eventId) return res.status(400).json({ message: "Missing Event ID" });
+    
+    let idsToAssign = Array.isArray(reviewerIds) ? reviewerIds : (req.body.reviewerId ? [req.body.reviewerId] : []);
+    if (idsToAssign.length === 0) return res.status(400).json({ message: "No reviewer IDs provided" });
 
     const event = await Event.findById(eventId);
-    const reviewer = await User.findById(reviewerId);
-
     if (!event) return res.status(404).json({ message: "Event not found" });
-    if (!reviewer) return res.status(404).json({ message: "Reviewer not found" });
 
-    if (event.reviewers.includes(reviewerId)) {
-      return res.status(400).json({ message: "Reviewer already assigned" });
+    // Add selected reviewers to the event (preventing duplicates)
+    for (const rid of idsToAssign) {
+      if (!event.reviewers.includes(rid)) {
+        event.reviewers.push(rid);
+      }
     }
 
-    event.reviewers.push(reviewerId);
+    // Now, distribute ALL students in this event among ALL current reviewers
+    const studentList = event.students;
+    const reviewerList = event.reviewers;
+
+    if (studentList.length > 0 && reviewerList.length > 0) {
+      // Fetch all reviewers to find the top-rated one
+      const reviewerDocs = await User.find({ _id: { $in: reviewerList } }).sort({ rating: -1 });
+      
+      const numStudents = studentList.length;
+      const numReviewers = reviewerList.length;
+      const studentsPerReviewer = Math.floor(numStudents / numReviewers);
+      const remainder = numStudents % numReviewers;
+
+      let studentIdx = 0;
+      const newAssignments = [];
+
+      // Loop through each reviewer and assign their share
+      for (let i = 0; i < numReviewers; i++) {
+        const currentReviewer = reviewerDocs[i];
+        let countToAssign = studentsPerReviewer;
+
+        // If this is the top-rated reviewer (at index 0 after sorting), add the remainder
+        if (i === 0) {
+          countToAssign += remainder;
+        }
+
+        for (let j = 0; j < countToAssign; j++) {
+          if (studentIdx < studentList.length) {
+            newAssignments.push({
+              student: studentList[studentIdx],
+              reviewer: currentReviewer._id
+            });
+            studentIdx++;
+          }
+        }
+      }
+
+      event.assignments = newAssignments;
+    }
+
     await event.save();
-    res.status(200).json({ message: "Reviewer assigned successfully", event });
+    
+    // Explicitly populate for feedback in frontend
+    const populatedEvent = await Event.findById(eventId)
+      .populate("reviewers", "name email rating")
+      .populate("assignments.student", "name email")
+      .populate("assignments.reviewer", "name email");
+
+    res.status(200).json({ 
+      message: `Reviewers assigned and ${studentList.length} students distributed.`, 
+      event: populatedEvent 
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -145,12 +198,29 @@ const updateStatusesByDate = async (events) => {
   return events;
 };
 
+exports.getEventTracker = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+    const event = await Event.findById(eventId).populate("students", "name email collegeName");
+    if (!event) return res.status(404).json({ message: "Event not found" });
+
+    const submissions = await Submission.find({ event: eventId })
+      .populate("student", "name email")
+      .populate("reviewer", "name email");
+
+    res.status(200).json({ event, submissions });
+  } catch (error) { res.status(500).json({ message: error.message }); }
+};
+
 /* =========================================
    GET DATA FUNCTIONS
 ========================================= */
 exports.getAllEvents = async (req, res) => {
   try {
-    let events = await Event.find().populate("reviewers", "name email");
+    let events = await Event.find()
+      .populate("reviewers", "name email")
+      .populate("assignments.student", "name email")
+      .populate("assignments.reviewer", "name email");
     events = await updateStatusesByDate(events);
     res.status(200).json(events);
   } catch (error) { res.status(500).json({ message: error.message }); }
@@ -158,7 +228,21 @@ exports.getAllEvents = async (req, res) => {
 
 exports.getAllReviewers = async (req, res) => {
   try {
-    const reviewers = await User.find({ role: "reviewer" }).select('+plainPassword').lean();
+    const { domains } = req.query;
+    const query = { role: "reviewer" };
+    
+    if (domains) {
+      // Clean up common issues like whitespace and empty strings
+      const domainList = domains.split(",").map(d => d.trim()).filter(d => d !== "");
+      if (domainList.length > 0) {
+        query.technicalDomains = { $in: domainList };
+      }
+    }
+
+    const reviewers = await User.find(query)
+      .select('+plainPassword +technicalDomains')
+      .sort({ rating: -1 })
+      .lean();
     for (let reviewer of reviewers) {
       const events = await Event.find({ reviewers: reviewer._id });
       reviewer.assignedEvents = events;
@@ -171,7 +255,12 @@ exports.getAllReviewers = async (req, res) => {
 exports.deleteReviewer = async (req, res) => {
   try {
     const { reviewerId } = req.params;
-    await Event.updateMany({ reviewers: reviewerId }, { $pull: { reviewers: reviewerId } });
+    await Event.updateMany({ reviewers: reviewerId }, { 
+      $pull: { 
+        reviewers: reviewerId,
+        assignments: { reviewer: reviewerId }
+      } 
+    });
     await User.findByIdAndDelete(reviewerId);
     res.status(200).json({ message: "Reviewer deleted successfully" });
   } catch (error) { res.status(500).json({ message: error.message }); }
@@ -179,7 +268,10 @@ exports.deleteReviewer = async (req, res) => {
 
 exports.getStudentEvents = async (req, res) => {
   try {
-    let events = await Event.find({ students: req.user.id }).sort({ createdAt: -1 });
+    let events = await Event.find({ students: req.user.id })
+      .populate("assignments.reviewer", "name email")
+      .populate("assignments.student", "name email")
+      .sort({ createdAt: -1 });
     events = await updateStatusesByDate(events);
     res.status(200).json(events);
   } catch (error) { res.status(500).json({ message: error.message }); }

@@ -29,6 +29,10 @@
             👥 View Reviewers
         </div>
 
+        <div class="menu-item" onclick="showSection('submissionsTrackerSection')">
+            📊 Submissions Tracker
+        </div>
+
         <div class="menu-item" onclick="showSection('issuesSection')">
             ⚠ Issues
         </div>
@@ -107,7 +111,42 @@
         <div id="viewReviewersSection" class="section hidden">
             <h2>All Reviewers</h2>
             <input type="text" id="searchReviewerInput" placeholder="🔍 Search by Reviewer Name or Event Name..." onkeyup="filterReviewers()" style="margin-bottom: 20px;">
+
             <div id="reviewerList"></div>
+        </div>
+
+        <!-- Submissions Tracker -->
+        <div id="submissionsTrackerSection" class="section hidden">
+            <h2>Submissions Tracker</h2>
+            <select id="eventTrackerSelector" onchange="loadTrackerData(this.value)" style="width: 100%; padding: 12px; margin-bottom: 20px;">
+                <option value="">-- Select an Event to Track --</option>
+            </select>
+
+            <div id="trackerDetails" class="hidden">
+                <div style="display: flex; gap: 20px; margin-bottom: 20px;">
+                    <div style="flex: 1; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        <h3>Total Joined</h3>
+                        <p id="statJoined" style="font-size: 2rem; font-weight: bold; margin: 0;">0</p>
+                    </div>
+                    <div style="flex: 1; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                        <h3>Total Submitted</h3>
+                        <p id="statSubmitted" style="font-size: 2rem; font-weight: bold; margin: 0; color: #28a745;">0</p>
+                    </div>
+                </div>
+
+                <div class="table-container" style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+                    <table width="100%" style="border-collapse: collapse;">
+                        <thead>
+                            <tr style="text-align: left; background: #f8f9fa;">
+                                <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Student Name</th>
+                                <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Reviewer</th>
+                                <th style="padding: 12px; border-bottom: 2px solid #dee2e6;">Submission Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trackerTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <!-- Issues -->

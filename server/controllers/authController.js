@@ -101,14 +101,21 @@ exports.getProfile = async (req, res) => {
   }
 };
 
-// 🔹 Update Student Profile
+// 🔹 Update User Profile (Student or Reviewer)
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, collegeName, phoneNumber, degree } = req.body;
+    const { name, collegeName, phoneNumber, degree, technicalDomains } = req.body;
     
+    // Build update object based on what's provided
+    const updateData = { name };
+    if (collegeName !== undefined) updateData.collegeName = collegeName;
+    if (phoneNumber !== undefined) updateData.phoneNumber = phoneNumber;
+    if (degree !== undefined) updateData.degree = degree;
+    if (technicalDomains !== undefined) updateData.technicalDomains = technicalDomains;
+
     const user = await User.findByIdAndUpdate(
       req.user.id, 
-      { name, collegeName, phoneNumber, degree }, 
+      updateData, 
       { new: true }
     );
     

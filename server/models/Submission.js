@@ -46,6 +46,24 @@ const submissionSchema = new mongoose.Schema(
     },
     reviewerDecisionTimestamp: {
       type: Date
+    },
+    reviewerScore: {
+      type: Number,
+      default: 0
+    },
+    aiScore: {
+      type: Number,
+      default: 0
+    },
+    assignedAt: {
+      type: Date
+    },
+    submittedAt: {
+      type: Date
+    },
+    reviewer: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User"
     }
   },
   { timestamps: true }

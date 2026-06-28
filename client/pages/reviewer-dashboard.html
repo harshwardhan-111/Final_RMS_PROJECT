@@ -13,7 +13,7 @@
 
     <div class="layout">
         <div class="sidebar">
-            <h2>Reviewer Panel</h2>
+            <h2>Reviewer Dashboard</h2>
             <div class="menu-item" onclick="showSection('assignedEventsSection')">📅 Assigned Events</div>
             <div class="menu-item" onclick="showSection('studentsTrackerSection')">👥 Students Tracker</div>
             <div class="menu-item" onclick="showSection('submissionsSection')">📂 Submissions</div>
@@ -29,6 +29,13 @@
                 <h2>Reviewer Profile</h2>
                 <div class="profile-card">
                     <p style="color:#666; margin-bottom: 20px;">Reviewer details are managed by the Administrator.</p>
+                    <div class="profile-field" style="margin-bottom: 20px; padding: 10px; border-bottom: 1px solid #eee;">
+                        <label style="display: block; margin-bottom: 5px; color: #666;">Performance Rating</label>
+                        <div style="font-size: 1rem; color: #333;">
+                            ⭐ <span id="revRatingValue">0.00</span> / 10.00
+                        </div>
+                    </div>
+
                     <div class="profile-field">
                         <label>Reviewer Name:</label>
                         <input type="text" id="revName" disabled
@@ -43,6 +50,25 @@
                         <label>Actual Password:</label>
                         <input type="text" id="revPassword" disabled
                             style="background:#fff3cd; color:#664d03; font-family:monospace; font-size:1.1rem; width: 100%; padding: 10px;">
+                    </div>
+                    <div class="profile-field" style="margin-top: 25px; padding-top: 15px; border-top: 1px solid #eee;">
+                        <label>Active Expertise Domains:</label>
+                        <input type="text" id="activeDomains" disabled placeholder="No domains selected" 
+                            style="background:#e9ecef; width: 100%; padding: 10px; font-weight: bold; color: #495057;">
+                    </div>
+                    <div class="profile-field" style="margin-top: 15px;">
+                        <label>Update Technical Domains:</label>
+                        <p style="font-size: 0.85em; color: #555; margin-bottom: 5px;">Hold CTRL (Windows) or CMD (Mac) to select multiple domains.</p>
+                        <select id="revDomains" multiple style="background:#fff; width: 100%; padding: 10px; border: 1px solid #ccc; height: 120px; border-radius: 4px;">
+                            <option value="Machine Learning (ML)">Machine Learning (ML)</option>
+                            <option value="Natural Language Processing (NLP)">Natural Language Processing (NLP)</option>
+                            <option value="Computer Vision (CV)">Computer Vision (CV)</option>
+                            <option value="Full-Stack Development">Full-Stack Development</option>
+                            <option value="Backend Systems">Backend Systems</option>
+                            <option value="Cloud Computing (AWS/Azure)">Cloud Computing (AWS/Azure)</option>
+                            <option value="Blockchain">Blockchain</option>
+                        </select>
+                        <button onclick="updateReviewerProfile()" style="margin-top: 15px; padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Save & Update Domains</button>
                     </div>
                 </div>
             </div>

@@ -3,6 +3,7 @@ const path = require("path");
 const Submission = require("../models/Submission");
 const Event = require("../models/Event");
 const generateAIReview = require("../utils/generateAIReview");
+const { updateReviewerRating } = require("../services/reviewerService");
 
 /* =========================================
    STUDENT UPLOAD SUBMISSION
@@ -150,14 +151,30 @@ exports.reviewSubmission = async (req, res) => {
 ======================================== */
 exports.acceptAIReview = async (req, res) => {
   try {
-    const { submissionId } = req.body;
+    const { submissionId, aiScore } = req.body;
     const submission = await Submission.findById(submissionId);
     if (!submission) return res.status(404).json({ message: "Submission not found" });
 
     submission.aiReviewStatus = "accepted";
     submission.status = "AI Review Accepted";
     submission.reviewerDecisionTimestamp = new Date();
+    
+    // Capture scores and timestamps
+    submission.aiScore = aiScore || 0;
+    submission.reviewerScore = aiScore || 0; 
+    submission.assignedAt = submission.assignedAt || submission.createdAt;
+    submission.submittedAt = new Date();
+    submission.reviewer = req.user.id; 
+
     await submission.save();
+
+    // Update reviewer rating
+    await updateReviewerRating(req.user.id, {
+      reviewerScore: submission.reviewerScore,
+      aiScore: submission.aiScore,
+      assignedAt: submission.assignedAt,
+      submittedAt: submission.submittedAt
+    });
 
     res.status(200).json({ message: "AI review accepted successfully", submission });
   } catch (error) {
@@ -174,6 +191,7 @@ exports.rejectAIReview = async (req, res) => {
     submission.aiReviewStatus = "rejected";
     submission.status = "AI Review Rejected";
     submission.reviewerDecisionTimestamp = new Date();
+    submission.reviewer = req.user.id; // Track who did it
     await submission.save();
 
     res.status(200).json({ message: "AI review rejected successfully", submission });
@@ -184,13 +202,29 @@ exports.rejectAIReview = async (req, res) => {
 
 exports.submitManualReview = async (req, res) => {
   try {
-    const { submissionId, feedback } = req.body;
+    const { submissionId, feedback, reviewerScore, aiScore } = req.body;
     const submission = await Submission.findById(submissionId);
     if (!submission) return res.status(404).json({ message: "Submission not found" });
 
     submission.reviewerFeedback = feedback;
     submission.status = "AI Review Rejected";
+    submission.reviewer = req.user.id; // Track who did it
+
+    // Capture scores and timestamps
+    submission.reviewerScore = reviewerScore || 0;
+    submission.aiScore = aiScore || 0;
+    submission.assignedAt = submission.assignedAt || submission.createdAt;
+    submission.submittedAt = new Date();
+
     await submission.save();
+
+    // Update reviewer rating
+    await updateReviewerRating(req.user.id, {
+      reviewerScore: submission.reviewerScore,
+      aiScore: submission.aiScore,
+      assignedAt: submission.assignedAt,
+      submittedAt: submission.submittedAt
+    });
 
     res.status(200).json({ message: "Manual review updated successfully", submission });
   } catch (error) {
